@@ -1,0 +1,18 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Paul de Nazelle"
+            }
+        ],
+        "Category": "Online Services",
+        "Description": "Affiche un tableau de bord Home Assistant et ses cartes sur le bureau",
+        "Icon": "go-home",
+        "Id": "org.paco.hadashboard",
+        "License": "MIT",
+        "Name": "Home Assistant Dashboard",
+        "Version": "0.1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

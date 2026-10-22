@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="General">
+    <entry name="url" type="String">
+      <default></default>
+    </entry>
+    <entry name="token" type="String">
+      <default></default>
+    </entry>
+    <entry name="dashboard" type="String">
+      <default></default>
+    </entry>
+    <entry name="viewIndex" type="Int">
+      <default>0</default>
+    </entry>
+    <entry name="columnWidth" type="Int">
+      <default>320</default>
+    </entry>
+    <entry name="cardOpacity" type="Int">
+      <default>80</default>
+    </entry>
+    <entry name="showHeader" type="Bool">
+      <default>true</default>
+    </entry>
+  </group>
+</kcfg>
