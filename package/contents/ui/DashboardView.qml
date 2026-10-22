@@ -4,6 +4,7 @@ import QtQuick.Controls as QQC2
 import org.kde.plasma.components as PC3
 import org.kde.kirigami as Kirigami
 import "../code/Ha.js" as Ha
+import "../code/Tr.js" as Tr
 import "../code/Strategy.js" as Strategy
 
 // Loads a Lovelace dashboard and shows one of its views, with tabs.
@@ -184,8 +185,9 @@ Item {
                     dash.loadHome(gen, t);
                 } else {
                     dash.dashboard = null;
-                    dash.loadError = "Tableau de bord « " + (t.path || "par défaut") + " » introuvable : "
-                                     + ((err && err.message) ? err.message : JSON.stringify(err));
+                    dash.loadError = Tr.tr(dash.client, "Dashboard “%1” not found: %2",
+                                           t.path || Tr.tr(dash.client, "default"),
+                                           (err && err.message) ? err.message : JSON.stringify(err));
                 }
             });
     }
@@ -204,7 +206,7 @@ Item {
             if ((urlPath || "") === mine || (!urlPath && mine === "lovelace"))
                 dash.loadConfig();
         }
-        function onServiceError(message) { dash.flash("Action refusée : " + message); }
+        function onServiceError(message) { dash.flash(Tr.tr(dash.client, "Action refused: %1", message)); }
     }
 
     Timer {
@@ -227,7 +229,7 @@ Item {
             PC3.ToolButton {
                 visible: !!dash.view && !!dash.view.subview
                 icon.name: "go-previous"
-                text: "Retour"
+                text: Tr.tr(dash.client, "Back")
                 display: QQC2.AbstractButton.IconOnly
                 PC3.ToolTip.text: text
                 PC3.ToolTip.visible: hovered
@@ -252,7 +254,7 @@ Item {
                     delegate: PC3.ToolButton {
                         required property int modelData
                         readonly property var v: dash.views[modelData]
-                        text: v.title || v.path || ("Vue " + (modelData + 1))
+                        text: v.title || v.path || Tr.tr(dash.client, "View %1", modelData + 1)
                         checkable: true
                         checked: dash.currentView === modelData
                         onClicked: {
@@ -277,7 +279,7 @@ Item {
                 height: width
                 radius: width / 2
                 color: dash.client.ready ? "#4caf50" : (dash.client.status === "error" ? "#f44336" : "#ff9800")
-                PC3.ToolTip.text: dash.client.ready ? "Connecté à Home Assistant " + dash.client.haVersion : dash.client.errorText
+                PC3.ToolTip.text: dash.client.ready ? Tr.tr(dash.client, "Connected to Home Assistant %1", dash.client.haVersion) : dash.client.errorText
                 PC3.ToolTip.visible: statusHover.hovered
                 HoverHandler { id: statusHover }
             }
@@ -285,7 +287,7 @@ Item {
             PC3.ToolButton {
                 icon.name: "view-refresh"
                 display: QQC2.AbstractButton.IconOnly
-                text: "Recharger"
+                text: Tr.tr(dash.client, "Reload")
                 PC3.ToolTip.text: text
                 PC3.ToolTip.visible: hovered
                 onClicked: dash.client.reconnect()
@@ -296,7 +298,7 @@ Item {
             Layout.fillWidth: true
             visible: dash.dashboard !== null && !dash.client.ready
             type: dash.client.status === "error" ? Kirigami.MessageType.Error : Kirigami.MessageType.Warning
-            text: dash.client.status === "error" ? dash.client.errorText : "Reconnexion à Home Assistant…"
+            text: dash.client.status === "error" ? dash.client.errorText : Tr.tr(dash.client, "Reconnecting to Home Assistant…")
         }
 
         Kirigami.InlineMessage {
@@ -325,14 +327,14 @@ Item {
                 width: parent.width - Kirigami.Units.gridUnit * 2
                 visible: dash.client.status === "unconfigured" || dash.client.status === "error" || dash.loadError !== ""
                 icon.name: dash.client.status === "unconfigured" ? "configure" : "network-disconnect"
-                text: dash.client.status === "unconfigured" ? "Widget non configuré"
-                      : (dash.loadError !== "" ? "Tableau de bord indisponible" : "Connexion impossible")
+                text: dash.client.status === "unconfigured" ? Tr.tr(dash.client, "Widget not configured")
+                      : (dash.loadError !== "" ? Tr.tr(dash.client, "Dashboard unavailable") : Tr.tr(dash.client, "Cannot connect"))
                 explanation: dash.client.status === "unconfigured"
-                             ? "Renseignez l'adresse de Home Assistant et un jeton d'accès longue durée."
+                             ? Tr.tr(dash.client, "Enter the Home Assistant address and a long-lived access token.")
                              : (dash.loadError !== "" ? dash.loadError : dash.client.errorText)
                 helpfulAction: Kirigami.Action {
                     icon.name: dash.client.status === "unconfigured" ? "configure" : "view-refresh"
-                    text: dash.client.status === "unconfigured" ? "Configurer…" : "Réessayer"
+                    text: dash.client.status === "unconfigured" ? Tr.tr(dash.client, "Configure…") : Tr.tr(dash.client, "Retry")
                     onTriggered: {
                         if (dash.client.status === "unconfigured")
                             dash.configureRequested();

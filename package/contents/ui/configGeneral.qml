@@ -3,8 +3,10 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
+import "../code/Tr.js" as Tr
 
 KCM.SimpleKCM {
+    readonly property var sys: Tr.systemClient()
     property alias cfg_url: urlField.text
     property alias cfg_token: tokenField.text
     property alias cfg_dashboard: dashboardField.text
@@ -16,14 +18,14 @@ KCM.SimpleKCM {
     Kirigami.FormLayout {
         QQC2.TextField {
             id: urlField
-            Kirigami.FormData.label: "Adresse de Home Assistant :"
+            Kirigami.FormData.label: Tr.tr(sys, "Home Assistant address:")
             Layout.fillWidth: true
             placeholderText: "http://homeassistant.local:8123"
         }
 
         QQC2.TextField {
             id: tokenField
-            Kirigami.FormData.label: "Jeton d'accès longue durée :"
+            Kirigami.FormData.label: Tr.tr(sys, "Long-lived access token:")
             Layout.fillWidth: true
             echoMode: TextInput.Password
             placeholderText: "eyJhbGciOi…"
@@ -32,8 +34,7 @@ KCM.SimpleKCM {
         QQC2.Label {
             Layout.fillWidth: true
             Layout.maximumWidth: Kirigami.Units.gridUnit * 24
-            text: "À créer dans Home Assistant : votre profil → onglet Sécurité → Jetons d'accès longue durée. "
-                  + "Le jeton est stocké en clair dans la configuration Plasma de votre session."
+            text: Tr.tr(sys, "Create one in Home Assistant: your profile → Security tab → Long-lived access tokens. The token is stored in plain text in your Plasma session configuration.")
             wrapMode: Text.Wrap
             font: Kirigami.Theme.smallFont
             opacity: 0.75
@@ -43,16 +44,15 @@ KCM.SimpleKCM {
 
         QQC2.TextField {
             id: dashboardField
-            Kirigami.FormData.label: "Tableau de bord :"
+            Kirigami.FormData.label: Tr.tr(sys, "Dashboard:")
             Layout.fillWidth: true
-            placeholderText: "vide = page d'accueil de HA"
+            placeholderText: Tr.tr(sys, "empty = Home Assistant home page")
         }
 
         QQC2.Label {
             Layout.fillWidth: true
             Layout.maximumWidth: Kirigami.Units.gridUnit * 24
-            text: "Collez l'adresse d'un tableau de bord depuis le navigateur (ex. https://…/dashboard-music/0) "
-                  + "ou juste son chemin (dashboard-music). « home » ou https://…/home/overview = la page Accueil."
+            text: Tr.tr(sys, "Paste a dashboard address from the browser (e.g. https://…/dashboard-music/0) or just its path (dashboard-music). “home” or https://…/home/overview = the Home page.")
             wrapMode: Text.Wrap
             font: Kirigami.Theme.smallFont
             opacity: 0.75
@@ -60,7 +60,7 @@ KCM.SimpleKCM {
 
         QQC2.SpinBox {
             id: columnSpin
-            Kirigami.FormData.label: "Largeur de colonne (px) :"
+            Kirigami.FormData.label: Tr.tr(sys, "Column width (px):")
             from: 200
             to: 800
             stepSize: 20
@@ -68,7 +68,7 @@ KCM.SimpleKCM {
 
         QQC2.SpinBox {
             id: opacitySpin
-            Kirigami.FormData.label: "Opacité des cartes (%) :"
+            Kirigami.FormData.label: Tr.tr(sys, "Card opacity (%):")
             from: 0
             to: 100
             stepSize: 5
@@ -76,8 +76,8 @@ KCM.SimpleKCM {
 
         QQC2.CheckBox {
             id: headerCheck
-            Kirigami.FormData.label: "En-tête :"
-            text: "Afficher les onglets et le bouton de rechargement"
+            Kirigami.FormData.label: Tr.tr(sys, "Header:")
+            text: Tr.tr(sys, "Show tabs and the reload button")
         }
     }
 }

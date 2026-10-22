@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PC3
 import org.kde.kirigami as Kirigami
 import "../code/Ha.js" as Ha
+import "../code/Tr.js" as Tr
 
 // One entity line, as in HA's entities card: icon, name, and a control
 // that depends on the domain (switch, button, slider, list or plain state).
@@ -32,8 +33,8 @@ RowLayout {
         if (!st || !conf.secondary_info)
             return "";
         switch (conf.secondary_info) {
-        case "last-changed": return Ha.relativeTime(st.last_changed);
-        case "last-updated": return Ha.relativeTime(st.last_updated);
+        case "last-changed": return Ha.relativeTime(row.client, st.last_changed);
+        case "last-updated": return Ha.relativeTime(row.client, st.last_updated);
         case "entity-id": return entityId;
         case "brightness": return attrs.brightness ? Math.round(attrs.brightness / 2.55) + " %" : "";
         case "position": return attrs.current_position !== undefined ? attrs.current_position + " %" : "";
@@ -134,9 +135,9 @@ RowLayout {
     Component {
         id: buttonComp
         PC3.Button {
-            text: row.domain === "scene" ? "Activer"
-                  : row.domain === "script" ? (row.st && row.st.state === "on" ? "Arrêter" : "Exécuter")
-                  : "Appuyer"
+            text: row.domain === "scene" ? Tr.tr(row.client, "Activate")
+                  : row.domain === "script" ? (row.st && row.st.state === "on" ? Tr.tr(row.client, "Stop") : Tr.tr(row.client, "Run"))
+                  : Tr.tr(row.client, "Press")
             onClicked: Ha.toggle(row.client, row.entityId)
         }
     }
@@ -144,7 +145,7 @@ RowLayout {
     Component {
         id: lockComp
         PC3.Button {
-            text: row.st && row.st.state === "locked" ? "Déverrouiller" : "Verrouiller"
+            text: row.st && row.st.state === "locked" ? Tr.tr(row.client, "Unlock") : Tr.tr(row.client, "Lock")
             onClicked: Ha.toggle(row.client, row.entityId)
         }
     }

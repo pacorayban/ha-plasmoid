@@ -41,6 +41,23 @@ Le jeton est stocké en clair dans `~/.config/plasma-org.kde.plasma.desktop-appl
 - Les icônes MDI sont téléchargées depuis votre instance HA (`/static/mdi/`), donc identiques au site.
 - Langue et format des nombres : ceux de votre profil HA.
 
+## Langue
+
+L'interface du widget suit la langue du profil Home Assistant (comme le site), pas celle du système :
+les états et noms envoyés par HA sont déjà dans cette langue. Textes source en anglais, traduction
+française dans `package/contents/code/Tr.js` (ajouter une langue = ajouter un dictionnaire).
+La page de configuration Plasma, elle, suit la langue du système.
+
+## Publication sur le KDE Store
+
+```bash
+./package.sh        # → dist/hadashboard-<version>.plasmoid
+```
+
+Sur [store.kde.org](https://store.kde.org) : *Add product* → catégorie *Plasma 6 Widgets*,
+puis téléverser le fichier `.plasmoid`. Texte de présentation prêt dans `STORE.md`.
+Penser à augmenter `Version` dans `package/metadata.json` à chaque nouvelle version.
+
 ## Développement
 
 ```bash
@@ -48,7 +65,7 @@ python3 test/mock_ha.py            # faux HA sur :8765 (jeton « test »)
 python3 test/mock_ha.py --port 8766 --no-config   # sans tableau de bord → Aperçu généré
 qml6 test/harness.qml              # le widget dans une fenêtre, hors Plasma
 qml6 test/harness.qml -- --VIEW=1 --SHOT=/tmp/v1.png --AUTOQUIT=1
-plasmawindowed org.paco.hadashboard   # le widget installé, dans une fenêtre
+plasmawindowed org.pacorayban.hadashboard   # le widget installé, dans une fenêtre
 ```
 
 Les avertissements QML arrivent dans `journalctl --user -f`.

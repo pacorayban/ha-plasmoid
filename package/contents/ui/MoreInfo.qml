@@ -4,6 +4,7 @@ import QtQuick.Controls as QQC2
 import org.kde.plasma.components as PC3
 import org.kde.kirigami as Kirigami
 import "../code/Ha.js" as Ha
+import "../code/Tr.js" as Tr
 
 // Detail popup for one entity (HA's "more-info" dialog, simplified):
 // a control card when it makes sense, then the attributes.
@@ -67,7 +68,7 @@ QQC2.Popup {
         if (typeof v === "object")
             return JSON.stringify(v);
         if (typeof v === "boolean")
-            return v ? "Oui" : "Non";
+            return v ? Tr.tr(client, "Yes") : Tr.tr(client, "No");
         if (Ha.isNumeric(v))
             return Ha.formatNumber(client, v, -1);
         return String(v);
@@ -124,7 +125,7 @@ QQC2.Popup {
                     PC3.Label {
                         Layout.fillWidth: true
                         text: Ha.stateDisplay(pop.client, pop.entityId, pop.st)
-                              + (pop.st ? " · " + Ha.relativeTime(pop.st.last_changed) : "")
+                              + (pop.st ? " · " + Ha.relativeTime(pop.client, pop.st.last_changed) : "")
                         opacity: 0.75
                         wrapMode: Text.Wrap
                     }
@@ -191,7 +192,7 @@ QQC2.Popup {
 
             PC3.Button {
                 Layout.alignment: Qt.AlignRight
-                text: "Ouvrir dans Home Assistant"
+                text: Tr.tr(pop.client, "Open in Home Assistant")
                 icon.name: "internet-web-browser"
                 onClicked: {
                     pop.dash.openUrl("/history?entity_id=" + pop.entityId);

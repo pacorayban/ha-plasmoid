@@ -4,6 +4,7 @@ import org.kde.plasma.components as PC3
 import org.kde.kirigami as Kirigami
 import ".."
 import "../../code/Ha.js" as Ha
+import "../../code/Tr.js" as Tr
 
 // HA "weather-forecast" card: current conditions and a few forecast slots.
 CardFrame {
@@ -67,7 +68,7 @@ CardFrame {
             return Qt.formatTime(d, "HH:mm");
         var day = d.toLocaleDateString(client.locale, "ddd");
         if (forecastType === "twice_daily")
-            return day + (item.is_daytime === false ? " (nuit)" : "");
+            return day + (item.is_daytime === false ? Tr.tr(client, " (night)") : "");
         return day;
     }
 

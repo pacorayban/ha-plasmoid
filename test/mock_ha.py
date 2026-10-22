@@ -394,6 +394,8 @@ def history_for(entity_id, start, end):
 
 
 class Conn:
+    lang = "fr"
+
     def __init__(self, sock, no_config):
         self.sock = sock
         self.no_config = no_config
@@ -505,7 +507,7 @@ class Conn:
         elif t == "auth/current_user":
             self.result(mid, {"id": "u1", "name": "Alex", "is_admin": True})
         elif t == "frontend/get_user_data":
-            self.result(mid, {"value": {"language": "fr", "number_format": "language"} if m.get("key") == "language" else None})
+            self.result(mid, {"value": {"language": self.lang, "number_format": "language"} if m.get("key") == "language" else None})
         elif t == "lovelace/config":
             if self.no_config:
                 self.error(mid, "config_not_found", "No config found.")
@@ -607,8 +609,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--no-config", action="store_true")
+    ap.add_argument("--lang", default="fr", help="language of the fake user profile")
     args = ap.parse_args()
     Handler.no_config = args.no_config
+    Conn.lang = args.lang
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     socketserver.ThreadingTCPServer.daemon_threads = True
     srv = socketserver.ThreadingTCPServer(("127.0.0.1", args.port), Handler)

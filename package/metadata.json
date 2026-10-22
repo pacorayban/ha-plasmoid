@@ -7,11 +7,13 @@
             }
         ],
         "Category": "Online Services",
-        "Description": "Affiche un tableau de bord Home Assistant et ses cartes sur le bureau",
+        "Description": "Shows your Home Assistant dashboards on the desktop, with their cards drawn natively and updated live",
+        "Description[fr]": "Affiche vos tableaux de bord Home Assistant sur le bureau, avec leurs cartes dessinées nativement et mises à jour en direct",
         "Icon": "go-home",
-        "Id": "org.paco.hadashboard",
+        "Id": "org.pacorayban.hadashboard",
         "License": "MIT",
         "Name": "Home Assistant Dashboard",
+        "Name[fr]": "Tableau de bord Home Assistant",
         "Version": "0.1.0"
     },
     "X-Plasma-API-Minimum-Version": "6.0"

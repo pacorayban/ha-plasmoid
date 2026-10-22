@@ -1,5 +1,6 @@
 import QtQuick
 import QtWebSockets
+import "../code/Tr.js" as Tr
 
 // Connection to Home Assistant through its WebSocket API.
 // Keeps states, registries, translations and MDI icon paths up to date.
@@ -79,7 +80,7 @@ Item {
         retryTimer.stop();
         pingTimer.stop();
         _closeSocket();
-        _failPending("Connexion fermée");
+        _failPending(Tr.tr(client, "Connection closed"));
         _subs = {};
         if (cleanUrl === "" || token.trim() === "") {
             status = "unconfigured";
@@ -87,7 +88,7 @@ Item {
         }
         if (!/^https?:\/\//i.test(cleanUrl)) {
             status = "error";
-            errorText = "L'adresse doit commencer par http:// ou https://";
+            errorText = Tr.tr(client, "The address must start with http:// or https://");
             return;
         }
         status = "connecting";
@@ -100,14 +101,14 @@ Item {
 
     function _onClosed() {
         pingTimer.stop();
-        _failPending("Connexion perdue");
+        _failPending(Tr.tr(client, "Connection lost"));
         _subs = {};
         if (_authFailed || status === "unconfigured" || status === "idle")
             return;
         if (status !== "error") {
             status = "connecting";
             if (errorText === "")
-                errorText = "Connexion perdue";
+                errorText = Tr.tr(client, "Connection lost");
         }
         retryTimer.interval = _retryDelay;
         retryTimer.start();
@@ -125,7 +126,8 @@ Item {
         active: false
         onTextMessageReceived: function (message) { client._onMessage(message); }
         onStatusChanged: {
-            if (client._opening)
+            // After a rejected token HA closes the socket: keep the token message.
+            if (client._opening || client._authFailed)
                 return;
             if (socket.status === WebSocket.Error)
                 client.errorText = socket.errorString;
@@ -155,7 +157,7 @@ Item {
         onTriggered: {
             if (client._awaitingPong) {
                 // No answer to the previous ping: the link is dead.
-                client.errorText = "Pas de réponse du serveur";
+                client.errorText = Tr.tr(client, "No answer from the server");
                 client._closeSocket();
                 client._onClosed();
                 return;
@@ -217,7 +219,7 @@ Item {
         case "auth_invalid":
             _authFailed = true;
             status = "error";
-            errorText = "Jeton refusé par Home Assistant" + (m.message ? " : " + m.message : "");
+            errorText = Tr.tr(client, "Token rejected by Home Assistant") + (m.message ? " (" + m.message + ")" : "");
             _closeSocket();
             break;
         case "result":
@@ -227,7 +229,7 @@ Item {
                 if (m.success)
                     p.resolve(m.result);
                 else
-                    p.reject(m.error || { code: "unknown", message: "Erreur inconnue" });
+                    p.reject(m.error || { code: "unknown", message: Tr.tr(client, "Unknown error") });
             }
             break;
         case "pong":
@@ -248,7 +250,7 @@ Item {
     function _send(msg, handler) {
         return new Promise(function (resolve, reject) {
             if (socket.status !== WebSocket.Open) {
-                reject({ code: "not_connected", message: "Non connecté" });
+                reject({ code: "not_connected", message: Tr.tr(client, "Not connected") });
                 return;
             }
             var id = client._nextId++;
@@ -337,7 +339,7 @@ Item {
             return client._loadRest(lang);
         }).catch(function (e) {
             client.status = "error";
-            client.errorText = "Chargement impossible : " + ((e && e.message) ? e.message : JSON.stringify(e));
+            client.errorText = Tr.tr(client, "Loading failed: %1", (e && e.message) ? e.message : JSON.stringify(e));
         });
     }
 

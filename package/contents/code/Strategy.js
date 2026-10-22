@@ -1,5 +1,6 @@
 .pragma library
 .import "Ha.js" as Ha
+.import "Tr.js" as Tr
 
 // Rebuilds HA's auto-generated "Overview" (the original-states strategy):
 // one card per area, then one per device, then one per domain.
@@ -135,7 +136,7 @@ function generateOverview(client) {
     }
     var titles = {};
     Object.keys(groups).forEach(function (d) {
-        titles[d] = d === "_helpers" ? "Entrées" : Ha.domainTitle(client, d);
+        titles[d] = d === "_helpers" ? Tr.tr(client, "Helpers") : Ha.domainTitle(client, d);
     });
     Object.keys(groups).sort(function (a, b) {
         return titles[a].localeCompare(titles[b]);
@@ -143,14 +144,14 @@ function generateOverview(client) {
         cards = cards.concat(computeCards(client, groups[d].sort(byName(client)), titles[d]));
     });
 
-    return { title: "Aperçu", path: "default_view", cards: cards };
+    return { title: Tr.tr(client, "Overview"), path: "default_view", cards: cards };
 }
 
 // Turns whatever lovelace/config returned into a dashboard we can draw.
 // `raw` is null when the dashboard has no stored config.
 function resolveDashboard(client, raw) {
     if (!raw || raw.strategy || !raw.views || raw.views.length === 0)
-        return { title: "Aperçu", generated: true, views: [generateOverview(client)] };
+        return { title: Tr.tr(client, "Overview"), generated: true, views: [generateOverview(client)] };
     var views = [];
     for (var i = 0; i < raw.views.length; i++) {
         var v = raw.views[i];
@@ -209,9 +210,13 @@ var SUMMARY_COLORS = {
     maintenance: "grey", energy: "amber", persons: "green", alerts: "red"
 };
 var SUMMARY_LABELS = {
-    light: "Lumières", climate: "Climat", security: "Sécurité", media_players: "Lecteurs multimédias",
-    maintenance: "Maintenance", energy: "Énergie", persons: "Personnes", alerts: "Alertes"
+    light: "Lights", climate: "Climate", security: "Security", media_players: "Media players",
+    maintenance: "Maintenance", energy: "Energy", persons: "People", alerts: "Alerts"
 };
+
+function summaryLabel(client, key) {
+    return SUMMARY_LABELS[key] ? Tr.tr(client, SUMMARY_LABELS[key]) : key;
+}
 
 // HA entity filter: {domain, device_class (list, "none" = no class), entity_category ("none" = primary)}.
 function matchFilter(client, id, f) {
@@ -274,8 +279,8 @@ function areaCard(client, areaId) {
     };
 }
 
-function deviceName(dev) {
-    return dev ? (dev.name_by_user || dev.name || "Appareil sans nom") : "Autres";
+function deviceName(client, dev) {
+    return dev ? (dev.name_by_user || dev.name || Tr.tr(client, "Unnamed device")) : Tr.tr(client, "Others");
 }
 
 // Sections listing entities grouped by device (used by area and "other devices" views).
@@ -301,7 +306,7 @@ function deviceSections(client, ids) {
             return;
         out.push({
             type: "grid",
-            cards: [{ type: "heading", heading: deviceName(g.dev), badges: battery.slice(0, 1).map(function (b) { return { entity: b }; }) }]
+            cards: [{ type: "heading", heading: deviceName(client, g.dev), badges: battery.slice(0, 1).map(function (b) { return { entity: b }; }) }]
                 .concat(main.sort(byName(client)).map(function (id) {
                     return { type: "tile", entity: id, name: { type: "entity" } };
                 }))
@@ -333,24 +338,24 @@ function generateHomeArea(client, areaId) {
         if (extraHeading) extraHeading(h, list);
         sections.push({ type: "grid", cards: [h].concat(list.sort(byName(client)).map(tile)) });
     }
-    addGroup("light", "Lumières", SUMMARY_ICONS.light, function (h, list) {
+    addGroup("light", summaryLabel(client, "light"), SUMMARY_ICONS.light, function (h, list) {
         var anyOn = { condition: "or", conditions: list.map(function (id) { return { condition: "state", entity: id, state: "on" }; }) };
         h.badges = [
-            { type: "button", icon: "mdi:power", text: "Éteintes",
+            { type: "button", icon: "mdi:power", text: Tr.tr(client, "All off"),
               tap_action: { action: "perform-action", perform_action: "light.turn_on", target: { area_id: areaId } },
               visibility: [{ condition: "not", conditions: [anyOn] }] },
-            { type: "button", icon: "mdi:power", text: "Allumées", color: "orange",
+            { type: "button", icon: "mdi:power", text: Tr.tr(client, "On"), color: "orange",
               tap_action: { action: "perform-action", perform_action: "light.turn_off", target: { area_id: areaId } },
               visibility: [anyOn] }
         ];
     });
-    addGroup("climate", "Climat", SUMMARY_ICONS.climate);
-    addGroup("security", "Sécurité", SUMMARY_ICONS.security);
-    addGroup("media_players", "Lecteurs multimédias", SUMMARY_ICONS.media_players);
+    addGroup("climate", summaryLabel(client, "climate"), SUMMARY_ICONS.climate);
+    addGroup("security", summaryLabel(client, "security"), SUMMARY_ICONS.security);
+    addGroup("media_players", summaryLabel(client, "media_players"), SUMMARY_ICONS.media_players);
 
     var scenes = ids.filter(function (id) { return matchFilter(client, id, { domain: "scene", entity_category: "none" }); });
     if (scenes.length)
-        sections.push({ type: "grid", cards: [{ type: "heading", heading: "Scènes", icon: "mdi:palette" }].concat(scenes.map(tile)) });
+        sections.push({ type: "grid", cards: [{ type: "heading", heading: Tr.tr(client, "Scenes"), icon: "mdi:palette" }].concat(scenes.map(tile)) });
     scenes.forEach(function (id) { used[id] = true; });
 
     var automations = ids.filter(function (id) { return matchFilter(client, id, { domain: "automation", entity_category: "none" }); });
@@ -363,7 +368,7 @@ function generateHomeArea(client, areaId) {
         sections = sections.concat(devSecs);
     }
     if (automations.length)
-        sections.push({ type: "grid", cards: [{ type: "heading", heading: "Automatisations", icon: "mdi:robot" }].concat(automations.map(tile)) });
+        sections.push({ type: "grid", cards: [{ type: "heading", heading: Tr.tr(client, "Automations"), icon: "mdi:robot" }].concat(automations.map(tile)) });
 
     if (sections.length === 1)
         sections[0].column_span = 2;
@@ -395,7 +400,7 @@ function generateHomeOverview(client, cfg, predicted) {
     }
     if (favIds.length)
         sections.push({ type: "grid", column_span: maxColumns,
-                        cards: [{ type: "heading", heading: "Favoris", heading_style: "title" }].concat(favIds.map(favoriteCard)) });
+                        cards: [{ type: "heading", heading: Tr.tr(client, "Favorites"), heading_style: "title" }].concat(favIds.map(favoriteCard)) });
 
     // Floors and their areas.
     var floors = client.floorOrder.map(function (f) { return client.floors[f]; }).filter(function (f) { return !!f; });
@@ -410,7 +415,7 @@ function generateHomeOverview(client, cfg, predicted) {
     var floorCount = usedFloors.length + (looseAreas.length ? 1 : 0);
     usedFloors.forEach(function (f) {
         sections.push({ type: "grid", column_span: maxColumns, cards: [{
-            type: "heading", heading: floorCount > 1 ? f.name : "Pièces", heading_style: "title",
+            type: "heading", heading: floorCount > 1 ? f.name : Tr.tr(client, "Areas"), heading_style: "title",
             icon: f.icon || floorIcon(f) }].concat(areasOf(f.floor_id).map(function (a) { return areaCard(client, a); })) });
     });
 
@@ -421,12 +426,12 @@ function generateHomeOverview(client, cfg, predicted) {
     if (looseAreas.length || hasOtherDevices) {
         var cards = looseAreas.map(function (a) { return areaCard(client, a); });
         if (hasOtherDevices)
-            cards.push({ type: "tile", entity: "zone.home", vertical: true, name: "Appareils", icon: "mdi:devices",
+            cards.push({ type: "tile", entity: "zone.home", vertical: true, name: Tr.tr(client, "Devices"), icon: "mdi:devices",
                          hide_state: true, tap_action: { action: "navigate", navigation_path: "other-devices" },
                          grid_options: { columns: 4 } });
         var heading = !usedFloors.length && !looseAreas.length ? ""
-                    : !usedFloors.length ? "Pièces"
-                    : !looseAreas.length ? "Appareils" : "Autres pièces";
+                    : !usedFloors.length ? Tr.tr(client, "Areas")
+                    : !looseAreas.length ? Tr.tr(client, "Devices") : Tr.tr(client, "Other areas");
         sections.push({ type: "grid", column_span: maxColumns,
                         cards: (heading ? [{ type: "heading", heading: heading, heading_style: "title" }] : []).concat(cards) });
     }
@@ -442,7 +447,7 @@ function generateHomeOverview(client, cfg, predicted) {
         media_players: function () { return summaryEntities(client, "media_players").length ? summaryCard("media_players") : null; },
         maintenance: function () { return summaryEntities(client, "maintenance").length ? summaryCard("maintenance") : null; },
         weather: function () {
-            return weather ? { type: "tile", entity: weather, name: "Météo", state_content: ["temperature", "state"] } : null;
+            return weather ? { type: "tile", entity: weather, name: Tr.tr(client, "Weather"), state_content: ["temperature", "state"] } : null;
         },
         energy: function () { return null; } // needs the energy collection: not supported
     };
@@ -462,13 +467,13 @@ function generateHomeOverview(client, cfg, predicted) {
         }
     });
 
-    var view = { title: "Accueil", path: "overview", icon: "mdi:home", type: "sections", max_columns: maxColumns,
+    var view = { title: Tr.tr(client, "Home"), path: "overview", icon: "mdi:home", type: "sections", max_columns: maxColumns,
                  sections: sections };
     if (summaries.length)
-        view.sidebar = { sections: [{ type: "grid", cards: [{ type: "heading", heading: "Résumés", heading_style: "title" }]
+        view.sidebar = { sections: [{ type: "grid", cards: [{ type: "heading", heading: Tr.tr(client, "Summaries"), heading_style: "title" }]
             .concat(summaries.map(function (c) { c.grid_options = { columns: 12 }; return c; })) }] };
     if (!cfg.hide_welcome_message)
-        view.header = { card: { type: "markdown", text_only: true, content: "## Bonjour {{ user }} !" } };
+        view.header = { card: { type: "markdown", text_only: true, content: Tr.tr(client, "## Hello {{ user }}!") } };
     return view;
 }
 
@@ -478,7 +483,7 @@ function generateHome(client, cfg, predicted) {
     client.areaOrder.forEach(function (a) { views.push(generateHomeArea(client, a)); });
 
     var players = summaryEntities(client, "media_players").filter(function (id) { return !isHidden(client, id); });
-    views.push({ title: "Lecteurs multimédias", path: "media-players", icon: SUMMARY_ICONS.media_players, subview: true,
+    views.push({ title: summaryLabel(client, "media_players"), path: "media-players", icon: SUMMARY_ICONS.media_players, subview: true,
                  type: "sections", sections: [{ type: "grid", column_span: 3, cards: players.map(function (id) {
                      return { type: "media-control", entity: id };
                  }) }] });
@@ -487,8 +492,8 @@ function generateHome(client, cfg, predicted) {
         var reg = client.entities[id];
         return reg && reg.device_id && !Ha.areaOfEntity(client, id) && !isHidden(client, id);
     });
-    views.push({ title: "Appareils", path: "other-devices", icon: "mdi:devices", subview: true, type: "sections",
+    views.push({ title: Tr.tr(client, "Devices"), path: "other-devices", icon: "mdi:devices", subview: true, type: "sections",
                  max_columns: 3, sections: deviceSections(client, loose) });
 
-    return { title: "Accueil", generated: true, home: true, views: views };
+    return { title: Tr.tr(client, "Home"), generated: true, home: true, views: views };
 }

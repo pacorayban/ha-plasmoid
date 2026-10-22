@@ -4,6 +4,7 @@ import org.kde.plasma.components as PC3
 import org.kde.kirigami as Kirigami
 import ".."
 import "../../code/Ha.js" as Ha
+import "../../code/Tr.js" as Tr
 
 // HA "entities" card (and "entity-filter").
 CardFrame {
@@ -205,7 +206,7 @@ CardFrame {
                                 elide: Text.ElideRight
                             }
                             PC3.Button {
-                                text: del.rtype === "weblink" ? "Ouvrir" : (del.rc.action_name || "Exécuter")
+                                text: del.rtype === "weblink" ? Tr.tr(card.client, "Open") : (del.rc.action_name || Tr.tr(card.client, "Run"))
                                 onClicked: {
                                     if (del.rtype === "weblink")
                                         card.dash.openUrl(del.rc.url);

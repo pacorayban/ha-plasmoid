@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.plasma.components as PC3
 import org.kde.kirigami as Kirigami
 import ".."
+import "../../code/Tr.js" as Tr
 
 // Placeholder for card types the widget cannot draw.
 CardFrame {
@@ -27,7 +28,7 @@ CardFrame {
         PC3.Label {
             Layout.fillWidth: true
             text: (card.config.title ? card.config.title + " — " : "")
-                  + "carte « " + (card.config.type || "?") + " » non prise en charge"
+                  + Tr.tr(card.client, "“%1” card not supported", card.config.type || "?")
             wrapMode: Text.Wrap
             font: Kirigami.Theme.smallFont
         }

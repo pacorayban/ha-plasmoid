@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
+import "../code/Tr.js" as Tr
 
 PlasmoidItem {
     id: root
@@ -13,7 +14,7 @@ PlasmoidItem {
     switchHeight: Kirigami.Units.gridUnit * 8
 
     toolTipMainText: "Home Assistant"
-    toolTipSubText: haClient.ready ? "Connecté" : (haClient.errorText || "Déconnecté")
+    toolTipSubText: haClient.ready ? Tr.tr(haClient, "Connected") : (haClient.errorText || Tr.tr(haClient, "Disconnected"))
 
     HaClient {
         id: haClient
@@ -57,12 +58,12 @@ PlasmoidItem {
 
     Plasmoid.contextualActions: [
         PlasmaCore.Action {
-            text: "Reconnecter"
+            text: Tr.tr(haClient, "Reconnect")
             icon.name: "view-refresh"
             onTriggered: haClient.reconnect()
         },
         PlasmaCore.Action {
-            text: "Ouvrir Home Assistant"
+            text: Tr.tr(haClient, "Open Home Assistant")
             icon.name: "internet-web-browser"
             enabled: haClient.cleanUrl !== ""
             onTriggered: Qt.openUrlExternally(haClient.cleanUrl)

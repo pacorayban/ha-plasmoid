@@ -4,6 +4,7 @@ import org.kde.plasma.components as PC3
 import org.kde.kirigami as Kirigami
 import ".."
 import "../../code/Ha.js" as Ha
+import "../../code/Tr.js" as Tr
 
 // HA "tile" card, with the most common features (brightness, cover, temperature, modes).
 CardFrame {
@@ -24,7 +25,7 @@ CardFrame {
 
     function stateText() {
         if (!st)
-            return "Introuvable";
+            return Tr.tr(client, "Not found");
         if (config.hide_state)
             return "";
         if (config.state_content) {
@@ -34,8 +35,8 @@ CardFrame {
                 case "area_name":
                     var a = Ha.areaOfEntity(client, entityId);
                     return a && client.areas[a] ? client.areas[a].name : "";
-                case "last_changed": return Ha.relativeTime(st.last_changed);
-                case "last_updated": return Ha.relativeTime(st.last_updated);
+                case "last_changed": return Ha.relativeTime(client, st.last_changed);
+                case "last_updated": return Ha.relativeTime(client, st.last_updated);
                 default:
                     var v = attrs[k];
                     if (v === undefined || v === null) return "";

@@ -5,6 +5,7 @@ import org.kde.kirigami as Kirigami
 import ".."
 import "../../code/Ha.js" as Ha
 import "../../code/Strategy.js" as Strategy
+import "../../code/Tr.js" as Tr
 
 // Home dashboard "home-summary" card (lights on, temperatures, security...)
 // and "shortcut" card (icon + label + link).
@@ -16,10 +17,6 @@ CardFrame {
     readonly property color accent: dash.tint(isShortcut ? (config.color || "primary") : (Strategy.SUMMARY_COLORS[key] || "primary"),
                                               Kirigami.Theme.highlightColor)
 
-    function plural(n, one, many) {
-        return n + " " + (n > 1 ? many : one);
-    }
-
     readonly property string summaryText: {
         if (isShortcut)
             return "";
@@ -29,7 +26,7 @@ CardFrame {
         switch (key) {
         case "light":
             var on = ids.filter(function (id) { return st(id) === "on"; }).length;
-            return on ? plural(on, "allumée", "allumées") : "Toutes éteintes";
+            return on ? Tr.trp(client, on, "%1 light on", "%1 lights on") : Tr.tr(client, "All lights off");
         case "climate":
             var temps = [];
             client.areaOrder.forEach(function (a) {
@@ -49,14 +46,14 @@ CardFrame {
                 return "";
             var open = locks.filter(function (id) { return ["unlocked", "jammed", "open"].indexOf(st(id)) >= 0; }).length;
             if (open)
-                return plural(open, "déverrouillée", "déverrouillées");
+                return Tr.trp(client, open, "%1 lock unlocked", "%1 locks unlocked");
             var disarmed = alarms.filter(function (id) { return st(id) === "disarmed"; }).length;
             if (disarmed)
-                return plural(disarmed, "alarme désarmée", "alarmes désarmées");
-            return "Tout est sécurisé";
+                return Tr.trp(client, disarmed, "%1 alarm disarmed", "%1 alarms disarmed");
+            return Tr.tr(client, "All secure");
         case "media_players":
             var playing = ids.filter(function (id) { return st(id) === "playing"; }).length;
-            return playing ? plural(playing, "en lecture", "en lecture") : "Rien en lecture";
+            return playing ? Tr.trp(client, playing, "%1 playing", "%1 playing") : Tr.tr(client, "Nothing playing");
         case "maintenance":
             var issues = ids.filter(function (id) {
                 var s = client.states[id];
@@ -64,7 +61,7 @@ CardFrame {
                     return Ha.isNumeric(s.state) && Number(s.state) <= 20;
                 return s.state === "on";
             }).length;
-            return issues ? plural(issues, "alerte", "alertes") : "Tout est en ordre";
+            return issues ? Tr.trp(client, issues, "%1 alert", "%1 alerts") : Tr.tr(client, "All good");
         default:
             return "";
         }
@@ -104,7 +101,7 @@ CardFrame {
             spacing: 0
             PC3.Label {
                 Layout.fillWidth: true
-                text: card.isShortcut ? (card.config.label || "") : (Strategy.SUMMARY_LABELS[card.key] || card.key)
+                text: card.isShortcut ? (card.config.label || "") : Strategy.summaryLabel(card.client, card.key)
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }

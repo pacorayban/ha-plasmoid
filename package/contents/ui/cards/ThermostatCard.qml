@@ -4,6 +4,7 @@ import org.kde.plasma.components as PC3
 import org.kde.kirigami as Kirigami
 import ".."
 import "../../code/Ha.js" as Ha
+import "../../code/Tr.js" as Tr
 
 // HA "thermostat" card: ring with the target temperature, +/- and HVAC modes.
 CardFrame {
@@ -149,7 +150,7 @@ CardFrame {
                 PC3.Label {
                     Layout.alignment: Qt.AlignHCenter
                     visible: card.attrs.current_temperature !== undefined && card.attrs.current_temperature !== null
-                    text: "Actuellement " + Ha.withUnit(card.fmt(Number(card.attrs.current_temperature)), card.unit)
+                    text: Tr.tr(card.client, "Currently %1", Ha.withUnit(card.fmt(Number(card.attrs.current_temperature)), card.unit))
                     font: Kirigami.Theme.smallFont
                     opacity: 0.75
                 }

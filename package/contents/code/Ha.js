@@ -1,4 +1,5 @@
 .pragma library
+.import "Tr.js" as Tr
 
 // Shared helpers: names, states, icons, colors, actions and conditions.
 // Every function takes the HaClient as first argument when it needs data.
@@ -145,7 +146,7 @@ function domainTitle(client, domain) {
 
 // ---------------------------------------------------------------- states
 
-function relativeTime(iso) {
+function relativeTime(client, iso) {
     var t = Date.parse(iso);
     if (isNaN(t))
         return String(iso);
@@ -153,12 +154,13 @@ function relativeTime(iso) {
     var future = diff < 0;
     diff = Math.abs(diff);
     if (diff < 45)
-        return future ? "dans quelques secondes" : "il y a quelques secondes";
-    var v, unit;
-    if (diff < 3600) { v = Math.round(diff / 60); unit = "min"; }
-    else if (diff < 86400) { v = Math.round(diff / 3600); unit = "h"; }
-    else { v = Math.round(diff / 86400); unit = v > 1 ? "jours" : "jour"; }
-    return (future ? "dans " : "il y a ") + v + " " + unit;
+        return Tr.tr(client, future ? "in a few seconds" : "a few seconds ago");
+    if (diff < 3600)
+        return Tr.tr(client, future ? "in %1 min" : "%1 min ago", Math.round(diff / 60));
+    if (diff < 86400)
+        return Tr.tr(client, future ? "in %1 h" : "%1 h ago", Math.round(diff / 3600));
+    var d = Math.round(diff / 86400);
+    return future ? Tr.trp(client, d, "in %1 day", "in %1 days") : Tr.trp(client, d, "%1 day ago", "%1 days ago");
 }
 
 function displayPrecision(client, entityId) {
@@ -224,16 +226,16 @@ function attributeNameDisplay(client, entityId, attribute) {
 
 function stateDisplay(client, entityId, st) {
     if (!st)
-        return "Introuvable";
+        return Tr.tr(client, "Not found");
     var s = st.state;
-    if (s === "unavailable") return "Indisponible";
-    if (s === "unknown") return "Inconnu";
+    if (s === "unavailable") return Tr.tr(client, "Unavailable");
+    if (s === "unknown") return Tr.tr(client, "Unknown");
     var d = domainOf(entityId);
     var a = st.attributes || {};
 
     if (a.device_class === "timestamp" || d === "button" || d === "input_button"
             || d === "scene" || d === "event" || d === "conversation")
-        return relativeTime(s);
+        return relativeTime(client, s);
 
     if (isNumeric(s) && (a.unit_of_measurement !== undefined || a.state_class !== undefined
             || d === "sensor" || d === "number" || d === "input_number" || d === "counter")) {
