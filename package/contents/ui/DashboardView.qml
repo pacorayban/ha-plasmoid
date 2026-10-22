@@ -25,6 +25,18 @@ Item {
     property string loadError: ""
     property int currentView: 0
     property string flashText: ""
+    property var backStack: []
+
+    // The setting may be a bare path ("dashboard-music") or a full URL copied from
+    // the browser ("https://ha.example/dashboard-music/0"): keep dashboard + view.
+    function parseTarget(s) {
+        var t = String(s || "").trim().replace(/^[a-z][a-z0-9+.-]*:\/\/[^\/]+/i, "");
+        t = t.split("?")[0].split("#")[0];
+        var segs = t.split("/").filter(function (x) { return x !== ""; });
+        return { path: segs.length ? decodeURIComponent(segs[0]) : "",
+                 view: segs.length > 1 ? decodeURIComponent(segs[1]) : "" };
+    }
+    readonly property var target: parseTarget(dashboardPath)
 
     readonly property var views: dashboard ? dashboard.views : []
     readonly property var tabIndices: {
@@ -59,8 +71,32 @@ Item {
     }
 
     function selectView(i) {
+        var target = views[i];
+        if (target && target.subview) {
+            var stack = backStack.slice();
+            stack.push(currentView);
+            backStack = stack;
+        } else {
+            backStack = [];
+            viewSelected(i);
+        }
         currentView = i;
-        viewSelected(i);
+    }
+
+    function goBack() {
+        var stack = backStack.slice();
+        var prev = stack.length ? stack.pop() : 0;
+        backStack = stack;
+        currentView = prev;
+    }
+
+    function viewIndexFor(key) {
+        for (var i = 0; i < views.length; i++)
+            if (views[i].path !== undefined && String(views[i].path) === key)
+                return i;
+        if (/^\d+$/.test(key) && Number(key) < views.length)
+            return Number(key);
+        return -1;
     }
 
     function navigate(path) {
@@ -69,14 +105,9 @@ Item {
         var p = String(path).split("?")[0].replace(/^#/, "");
         var segs = p.split("/").filter(function (s) { return s !== ""; });
         var last = segs.length ? segs[segs.length - 1] : "";
-        for (var i = 0; i < views.length; i++) {
-            if (views[i].path && String(views[i].path) === last) {
-                selectView(i);
-                return;
-            }
-        }
-        if (/^\d+$/.test(last) && Number(last) < views.length) {
-            selectView(Number(last));
+        var idx = viewIndexFor(last);
+        if (idx >= 0) {
+            selectView(idx);
             return;
         }
         openUrl(p.charAt(0) === "/" ? p : "/" + p);
@@ -95,18 +126,52 @@ Item {
 
     // ------------------------------------------------------------ loading
 
+    function setDashboard(d) {
+        var keep = dashboard && view ? view.path : undefined;
+        dashboard = d;
+        loadError = "";
+        var idx = -1;
+        if (keep !== undefined)
+            idx = viewIndexFor(String(keep));        // reload: stay on the same view
+        if (idx < 0 && target.view !== "")
+            idx = viewIndexFor(target.view);         // view given in the URL (may be a sub-view)
+        if (idx < 0) {
+            idx = Math.min(viewIndex, Math.max(0, views.length - 1));
+            if (!views[idx] || views[idx].subview)
+                idx = 0;
+        }
+        if (!views[idx] || !views[idx].subview)
+            backStack = [];
+        currentView = idx;
+    }
+
+    // HA's "Home" panel (/home): generated from its own settings and usage predictions.
+    function loadHome() {
+        var cl = client;
+        Promise.all([
+            cl.call({ type: "frontend/get_system_data", key: "home" }).catch(function () { return { value: null }; }),
+            cl.call({ type: "usage_prediction/common_control" }).catch(function () { return { entities: [] }; })
+        ]).then(function (r) {
+            dash.setDashboard(Strategy.generateHome(cl, (r[0] && r[0].value) || {}, (r[1] && r[1].entities) || []));
+        });
+    }
+
     function loadConfig() {
         if (!client || !client.ready)
             return;
-        var path = dashboardPath.trim();
-        client.call({ type: "lovelace/config", url_path: path === "" ? null : path, force: false })
+        var path = target.path;
+        if (path === "home") {
+            loadHome();
+            return;
+        }
+        var urlPath = (path === "" || path === "lovelace") ? null : path;
+        client.call({ type: "lovelace/config", url_path: urlPath, force: false })
             .then(function (raw) {
-                dash.dashboard = Strategy.resolveDashboard(dash.client, raw);
-                dash.loadError = "";
+                dash.setDashboard(Strategy.resolveDashboard(dash.client, raw));
             }, function (err) {
-                if (err && err.code === "config_not_found" && path === "") {
-                    dash.dashboard = Strategy.resolveDashboard(dash.client, null);
-                    dash.loadError = "";
+                if (err && err.code === "config_not_found" && urlPath === null) {
+                    // No "Overview" dashboard: like the web UI, fall back to the Home panel.
+                    dash.loadHome();
                 } else {
                     dash.dashboard = null;
                     dash.loadError = "Tableau de bord « " + (path || "par défaut") + " » introuvable : "
@@ -115,18 +180,17 @@ Item {
             });
     }
 
-    Component.onCompleted: {
-        currentView = viewIndex;
+    Component.onCompleted: loadConfig()
+    onDashboardPathChanged: {
+        dashboard = null;
         loadConfig();
     }
-    onViewIndexChanged: currentView = viewIndex
-    onDashboardPathChanged: loadConfig()
 
     Connections {
         target: dash.client
         function onLoaded() { dash.loadConfig(); }
         function onLovelaceUpdated(urlPath) {
-            var mine = dash.dashboardPath.trim();
+            var mine = dash.target.path;
             if ((urlPath || "") === mine || (!urlPath && mine === "lovelace"))
                 dash.loadConfig();
         }
@@ -150,9 +214,27 @@ Item {
             visible: dash.showHeader && dash.dashboard !== null
             spacing: Kirigami.Units.smallSpacing
 
+            PC3.ToolButton {
+                visible: !!dash.view && !!dash.view.subview
+                icon.name: "go-previous"
+                text: "Retour"
+                display: QQC2.AbstractButton.IconOnly
+                PC3.ToolTip.text: text
+                PC3.ToolTip.visible: hovered
+                onClicked: dash.goBack()
+            }
+
+            Kirigami.Heading {
+                Layout.fillWidth: true
+                visible: !!dash.view && !!dash.view.subview
+                level: 4
+                text: dash.view && dash.view.title ? dash.view.title : ""
+                elide: Text.ElideRight
+            }
+
             Flow {
                 Layout.fillWidth: true
-                visible: dash.tabIndices.length > 1
+                visible: dash.tabIndices.length > 1 && !(dash.view && dash.view.subview)
                 spacing: Kirigami.Units.smallSpacing
 
                 Repeater {
@@ -173,7 +255,7 @@ Item {
 
             Kirigami.Heading {
                 Layout.fillWidth: true
-                visible: dash.tabIndices.length <= 1
+                visible: dash.tabIndices.length <= 1 && !(dash.view && dash.view.subview)
                 level: 4
                 text: dash.view && dash.view.title && !(dash.dashboard && dash.dashboard.generated)
                       ? dash.view.title : (dash.dashboard ? dash.dashboard.title : "")
@@ -257,6 +339,7 @@ Item {
             Layout.fillHeight: true
             visible: dash.dashboard !== null
             contentWidth: availableWidth
+            PC3.ScrollBar.horizontal.policy: PC3.ScrollBar.AlwaysOff
 
             ViewContent {
                 width: scroll.availableWidth

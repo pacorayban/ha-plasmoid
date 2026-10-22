@@ -29,7 +29,8 @@ CardFrame {
         var token = { alive: true, id: null };
         var cl = client;
         _token = token;
-        cl.subscribe({ type: "render_template", template: content, strict: false, report_errors: false },
+        cl.subscribe({ type: "render_template", template: content, strict: false, report_errors: false,
+                       variables: { user: client.userName } },
                          function (ev) {
                              if (token.alive && ev && ev.result !== undefined)
                                  card.rendered = String(ev.result);
@@ -40,7 +41,8 @@ CardFrame {
         }, function (e) {
             // Non-admin users may not be allowed to render templates: show the raw text.
             if (token.alive)
-                card.rendered = card.content.replace(/\{%[^%]*%\}/g, "");
+                card.rendered = card.content.replace(/\{\{\s*user\s*\}\}/g, card.client.userName)
+                                            .replace(/\{%[^%]*%\}/g, "");
         });
     }
 

@@ -28,6 +28,9 @@ Item {
     property var devices: ({})
     property var areas: ({})
     property var areaOrder: []
+    property var floors: ({})
+    property var floorOrder: []
+    property string userName: ""
     property var iconDefs: ({})
     property var entityIconDefs: ({})
     property var translations: ({})
@@ -353,8 +356,15 @@ Item {
             call({ type: "config/area_registry/list" }).catch(fallback([], "area registry")),
             call({ type: "frontend/get_icons", category: "entity_component" }).catch(fallback({ resources: {} }, "icons")),
             call({ type: "frontend/get_translations", language: lang, category: "entity_component" }).catch(fallback({ resources: {} }, "translations")),
-            call({ type: "frontend/get_translations", language: lang, category: "title" }).catch(fallback({ resources: {} }, "titles"))
+            call({ type: "frontend/get_translations", language: lang, category: "title" }).catch(fallback({ resources: {} }, "titles")),
+            call({ type: "config/floor_registry/list" }).catch(fallback([], "floor registry")),
+            call({ type: "auth/current_user" }).catch(fallback({}, "current user"))
         ]).then(function (r) {
+            var fl = {}, forder = [];
+            (r[8] || []).forEach(function (f) { fl[f.floor_id] = f; forder.push(f.floor_id); });
+            client.floors = fl;
+            client.floorOrder = forder;
+            client.userName = (r[9] && r[9].name) || "";
 
             var st = {};
             r[1].forEach(function (s) { st[s.entity_id] = s; });

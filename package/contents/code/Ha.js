@@ -116,8 +116,20 @@ function isActive(entityId, st) {
 function entityName(client, entityId, st, cfgName) {
     if (typeof cfgName === "string" && cfgName !== "")
         return cfgName;
-    if (st && st.attributes && st.attributes.friendly_name)
-        return st.attributes.friendly_name;
+    if (st && st.attributes && st.attributes.friendly_name) {
+        var full = String(st.attributes.friendly_name);
+        if (cfgName && typeof cfgName === "object" && cfgName.type === "entity") {
+            var reg0 = client.entities[entityId];
+            var dev = reg0 && reg0.device_id ? client.devices[reg0.device_id] : null;
+            var dn = dev ? String(dev.name_by_user || dev.name || "") : "";
+            if (dn && full.length > dn.length && full.indexOf(dn) === 0) {
+                var rest = full.substring(dn.length).replace(/^[\s:\-–]+/, "");
+                if (rest)
+                    return rest.charAt(0).toUpperCase() + rest.slice(1);
+            }
+        }
+        return full;
+    }
     var reg = client.entities[entityId];
     if (reg && reg.name)
         return reg.name;

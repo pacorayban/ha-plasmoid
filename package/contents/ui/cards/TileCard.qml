@@ -27,6 +27,32 @@ CardFrame {
             return "Introuvable";
         if (config.hide_state)
             return "";
+        if (config.state_content) {
+            var parts = [].concat(config.state_content).map(function (k) {
+                switch (k) {
+                case "state": return card.defaultStateText();
+                case "area_name":
+                    var a = Ha.areaOfEntity(client, entityId);
+                    return a && client.areas[a] ? client.areas[a].name : "";
+                case "last_changed": return Ha.relativeTime(st.last_changed);
+                case "last_updated": return Ha.relativeTime(st.last_updated);
+                default:
+                    var v = attrs[k];
+                    if (v === undefined || v === null) return "";
+                    if (Ha.isNumeric(v)) {
+                        var unit = k === "temperature" ? (attrs.temperature_unit || Ha.temperatureUnit(client))
+                                 : k === "humidity" || k === "current_position" ? "%" : "";
+                        return Ha.withUnit(Ha.formatNumber(client, v, k === "temperature" ? 1 : -1), unit);
+                    }
+                    return Ha.attributeValueDisplay(client, entityId, k, v);
+                }
+            }).filter(function (x) { return x !== ""; });
+            return parts.join(" · ");
+        }
+        return defaultStateText();
+    }
+
+    function defaultStateText() {
         var base = Ha.stateDisplay(client, entityId, st);
         if (domain === "light" && st.state === "on" && attrs.brightness)
             return Math.round(attrs.brightness / 2.55) + " %";

@@ -45,13 +45,14 @@ KCM.SimpleKCM {
             id: dashboardField
             Kirigami.FormData.label: "Tableau de bord :"
             Layout.fillWidth: true
-            placeholderText: "vide = Aperçu (par défaut)"
+            placeholderText: "vide = page d'accueil de HA"
         }
 
         QQC2.Label {
             Layout.fillWidth: true
             Layout.maximumWidth: Kirigami.Units.gridUnit * 24
-            text: "Le chemin d'URL du tableau de bord, par exemple « dashboard-maison » pour http://…/dashboard-maison."
+            text: "Collez l'adresse d'un tableau de bord depuis le navigateur (ex. https://…/dashboard-music/0) "
+                  + "ou juste son chemin (dashboard-music). « home » ou https://…/home/overview = la page Accueil."
             wrapMode: Text.Wrap
             font: Kirigami.Theme.smallFont
             opacity: 0.75

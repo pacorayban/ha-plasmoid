@@ -14,13 +14,19 @@ Clic droit sur le widget → *Configurer* :
 
 - **Adresse** : `http://homeassistant.local:8123` (ou `https://…`)
 - **Jeton** : profil HA → onglet *Sécurité* → *Jetons d'accès longue durée*
-- **Tableau de bord** : vide = celui par défaut ; sinon son chemin d'URL (`dashboard-maison`)
+- **Tableau de bord** : l'adresse copiée depuis le navigateur (`https://…/dashboard-music/0`, la vue est reprise)
+  ou juste le chemin (`dashboard-music`). `home` ou `https://…/home/overview` = la page *Accueil* de HA.
+  Vide = le tableau de bord par défaut, ou la page *Accueil* s'il n'y en a pas (comme le site).
 
 Le jeton est stocké en clair dans `~/.config/plasma-org.kde.plasma.desktop-appletsrc`.
 
 ## Ce qui est affiché
 
-- Le tableau de bord est lu via l'API WebSocket (`lovelace/config`). S'il est généré
+- La page *Accueil* (`/home`) est reconstruite comme dans HA : favoris (épinglés + suggestions
+  d'usage de HA), pièces par étage (cartes compactes qui ouvrent la sous-vue de la pièce),
+  « Appareils » sans pièce, et résumés (lumières, climat, sécurité, médias, météo, maintenance)
+  en colonne à droite, ou après les favoris si le widget est étroit. Le résumé « Énergie » n'est pas géré.
+- Les autres tableaux de bord sont lus via l'API WebSocket (`lovelace/config`). S'ils sont générés
   automatiquement par HA (« Aperçu » par défaut, ou tableau de bord à stratégie),
   le widget le reconstruit lui-même : une carte par pièce, puis par appareil, puis par domaine.
 - Vues : maçonnerie, sections (grille de 12) et panneau ; onglets si plusieurs vues ; badges.

@@ -18,7 +18,27 @@ Item {
     readonly property string vtype: !view ? "masonry"
         : (view.type || (view.sections ? "sections" : (view.panel ? "panel" : "masonry")))
     readonly property int ncols: Math.max(1, Math.floor((width + gap) / (columnWidth + gap)))
-    readonly property int sectionCols: Math.max(1, Math.min(ncols, (view && view.max_columns) || 4))
+    readonly property var sidebarSections: vtype === "sections" && view && view.sidebar ? (view.sidebar.sections || []) : []
+    // Sidebar on the right when there is room for it plus two columns, otherwise on top.
+    readonly property bool sidebarRight: sidebarSections.length > 0 && ncols >= 3
+    // Narrow: like HA on a phone, summaries go after the first section, two per row.
+    readonly property var mainSections: {
+        var secs = vtype === "sections" && view ? (view.sections || []) : [];
+        if (sidebarRight || sidebarSections.length === 0)
+            return secs;
+        var side = sidebarSections.map(function (s) {
+            var copy = JSON.parse(JSON.stringify(s));
+            copy.column_span = 99;
+            copy.cards = (copy.cards || []).map(function (c) {
+                if (c.type !== "heading")
+                    c.grid_options = { columns: 6 };
+                return c;
+            });
+            return copy;
+        });
+        return secs.slice(0, 1).concat(side).concat(secs.slice(1));
+    }
+    readonly property int sectionCols: Math.max(1, Math.min(sidebarRight ? ncols - 1 : ncols, (view && view.max_columns) || 4))
 
     readonly property var masonryColumns: {
         if (!view || vtype === "sections" || vtype === "panel")
@@ -46,6 +66,14 @@ Item {
         id: col
         width: vc.width
         spacing: vc.gap
+
+        // View header (e.g. the Home welcome message)
+        CardLoader {
+            Layout.fillWidth: true
+            config: vc.view && vc.view.header && vc.view.header.card ? vc.view.header.card : null
+            client: vc.client
+            dash: vc.dash
+        }
 
         // Badges
         Flow {
@@ -141,43 +169,50 @@ Item {
             dash: vc.dash
         }
 
-        // Sections view
-        GridLayout {
+        // Sections view (+ sidebar on the right)
+        RowLayout {
             Layout.fillWidth: true
             visible: vc.vtype === "sections"
-            columns: vc.sectionCols
-            uniformCellWidths: true
-            columnSpacing: vc.gap
-            rowSpacing: vc.gap
+            spacing: vc.gap
 
-            Repeater {
-                model: vc.vtype === "sections" && vc.view ? (vc.view.sections || []) : []
-                delegate: Item {
-                    id: sec
-                    required property var modelData
-                    Layout.columnSpan: Math.min(modelData.column_span || 1, vc.sectionCols)
-                    Layout.fillWidth: true
-                    Layout.preferredWidth: 1
-                    Layout.alignment: Qt.AlignTop
-                    implicitHeight: flow.implicitHeight
-                    visible: { vc.client.revision; return Ha.checkConditions(vc.client, modelData.visibility) && (modelData.cards || []).length > 0; }
+            GridLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignTop
+                columns: vc.sectionCols
+                uniformCellWidths: true
+                columnSpacing: vc.gap
+                rowSpacing: vc.gap
 
-                    Flow {
-                        id: flow
-                        width: sec.width
-                        spacing: Kirigami.Units.smallSpacing
+                Repeater {
+                    model: vc.mainSections
+                    delegate: SectionView {
+                        required property var modelData
+                        Layout.columnSpan: Math.min(modelData.column_span || 1, vc.sectionCols)
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        Layout.alignment: Qt.AlignTop
+                        section: modelData
+                        client: vc.client
+                        dash: vc.dash
+                    }
+                }
+            }
 
-                        Repeater {
-                            model: sec.modelData.cards || []
-                            delegate: CardLoader {
-                                required property var modelData
-                                width: Math.max(Kirigami.Units.gridUnit * 3,
-                                                Math.floor((flow.width + flow.spacing) * Ha.gridColumns(modelData) / 12 - flow.spacing))
-                                config: modelData
-                                client: vc.client
-                                dash: vc.dash
-                            }
-                        }
+            ColumnLayout {
+                visible: vc.sidebarRight
+                Layout.preferredWidth: vc.columnWidth
+                Layout.maximumWidth: vc.columnWidth
+                Layout.alignment: Qt.AlignTop
+                spacing: vc.gap
+
+                Repeater {
+                    model: vc.sidebarRight ? vc.sidebarSections : []
+                    delegate: SectionView {
+                        required property var modelData
+                        Layout.fillWidth: true
+                        section: modelData
+                        client: vc.client
+                        dash: vc.dash
                     }
                 }
             }

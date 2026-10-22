@@ -36,7 +36,62 @@ CardFrame {
         return card.ids.some(function (id) { return Ha.domainOf(id) === d; });
     })
 
-    implicitHeight: col.implicitHeight + 2 * padding
+    readonly property bool compact: config.vertical === true || config.display_type === "compact"
+    readonly property bool lightsOn: {
+        client.revision;
+        return ids.some(function (id) { return Ha.domainOf(id) === "light" && client.states[id] && client.states[id].state === "on"; });
+    }
+    readonly property string sensorText: {
+        client.revision;
+        var list = compact && config.sensor_classes ? sensorIds.slice(0, Math.max(1, config.sensor_classes.length)) : sensorIds;
+        if (compact && (!config.sensor_classes || config.sensor_classes.length === 0))
+            list = [];
+        return list.map(function (id) { return Ha.stateDisplay(client, id, client.states[id]); }).join(" · ");
+    }
+
+    implicitHeight: (compact ? compactCol.implicitHeight : col.implicitHeight) + 2 * padding
+
+    // Compact vertical style used by the Home dashboard: icon, name, temperature.
+    ColumnLayout {
+        id: compactCol
+        visible: card.compact
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.margins: card.padding
+        spacing: Kirigami.Units.smallSpacing
+
+        Rectangle {
+            Layout.alignment: Qt.AlignHCenter
+            readonly property color tone: card.lightsOn ? card.dash.tint("amber", "") : card.dash.iconColor
+            implicitWidth: Kirigami.Units.gridUnit * 2.2
+            implicitHeight: implicitWidth
+            radius: width / 2
+            color: Qt.rgba(tone.r, tone.g, tone.b, 0.18)
+            HaIcon {
+                anchors.centerIn: parent
+                client: card.client
+                icon: card.area && card.area.icon ? card.area.icon : "mdi:texture-box"
+                color: parent.tone
+            }
+        }
+        PC3.Label {
+            Layout.fillWidth: true
+            text: card.area ? card.area.name : card.areaId
+            font.weight: Font.DemiBold
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+        }
+        PC3.Label {
+            // Always present so every compact area card has the same height.
+            Layout.fillWidth: true
+            text: card.sensorText
+            font: Kirigami.Theme.smallFont
+            opacity: 0.75
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+        }
+    }
 
     MouseArea {
         anchors.fill: parent
@@ -45,6 +100,7 @@ CardFrame {
 
     ColumnLayout {
         id: col
+        visible: !card.compact
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top

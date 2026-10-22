@@ -22,7 +22,8 @@ Loader {
         "vertical-stack": "StackCard", "horizontal-stack": "StackCard", "grid": "StackCard",
         "heading": "HeadingCard", "picture": "PictureCard", "picture-entity": "PictureCard",
         "picture-glance": "PictureCard", "history-graph": "HistoryGraphCard",
-        "statistics-graph": "HistoryGraphCard", "area": "AreaCard"
+        "statistics-graph": "HistoryGraphCard", "area": "AreaCard",
+        "home-summary": "SummaryCard", "shortcut": "SummaryCard"
     })
     readonly property var _unsupported: ["map", "logbook", "calendar", "iframe", "todo-list",
                                          "shopping-list", "energy-date-selection", "empty-state",
@@ -50,6 +51,9 @@ Loader {
         if (!config || !client)
             return null;
         if (config.visibility && !Ha.checkConditions(client, config.visibility))
+            return null;
+        // Admin-only Home cards (repairs, updates...) hide themselves when empty: skip them.
+        if (config.hide_empty && ["repairs", "updates", "discovered-devices"].indexOf(config.type) >= 0)
             return null;
         if (config.type === "conditional")
             return Ha.checkConditions(client, config.conditions) ? (config.card || null) : null;

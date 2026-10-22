@@ -90,16 +90,25 @@ STATES = {s["entity_id"]: s for s in [
     st("sun.sun", "above_horizon", {"friendly_name": "Soleil"}),
     st("camera.entree", "idle", {"friendly_name": "Caméra entrée", "entity_picture": "/api/camera_proxy/camera.entree?token=abc"}),
     st("update.home_assistant", "off", {"friendly_name": "Mise à jour HA"}),
+    st("zone.home", "1", {"friendly_name": "Maison", "latitude": 46.16, "longitude": -1.15}),
 ]}
 
 AREAS = [
-    {"area_id": "salon", "name": "Salon", "icon": "mdi:sofa", "floor_id": None,
+    {"area_id": "salon", "floor_id": "rdc", "name": "Salon", "icon": "mdi:sofa",
      "temperature_entity_id": "sensor.salon_temperature", "humidity_entity_id": "sensor.salon_humidite"},
-    {"area_id": "cuisine", "name": "Cuisine", "icon": "mdi:stove", "floor_id": None},
-    {"area_id": "chambre", "name": "Chambre", "icon": "mdi:bed", "floor_id": None},
-    {"area_id": "bureau", "name": "Bureau", "icon": "mdi:desk", "floor_id": None},
-    {"area_id": "entree", "name": "Entrée", "icon": "mdi:door", "floor_id": None},
+    {"area_id": "cuisine", "floor_id": "rdc", "name": "Cuisine", "icon": "mdi:stove", },
+    {"area_id": "chambre", "floor_id": "etage", "name": "Chambre", "icon": "mdi:bed", },
+    {"area_id": "bureau", "floor_id": "etage", "name": "Bureau", "icon": "mdi:desk", },
+    {"area_id": "entree", "floor_id": "rdc", "name": "Entrée", "icon": "mdi:door", },
 ]
+
+FLOORS = [
+    {"floor_id": "rdc", "name": "Rez-de-chaussée", "level": 0, "icon": None},
+    {"floor_id": "etage", "name": "Étage", "level": 1, "icon": None},
+]
+
+HOME_SETTINGS = {"favorite_entities": ["light.salon_plafonnier", "climate.salon"]}
+PREDICTED = ["switch.cuisine_cafetiere", "cover.chambre_volet", "lock.porte", "media_player.salon_sonos"]
 
 DEVICES = [
     {"id": "dev_hue_salon", "name": "Hue salon", "name_by_user": None, "area_id": "salon"},
@@ -487,6 +496,14 @@ class Conn:
             self.result(mid, {"resources": ICONS if m.get("category") == "entity_component" else {}})
         elif t == "frontend/get_translations":
             self.result(mid, {"resources": TR})
+        elif t == "config/floor_registry/list":
+            self.result(mid, FLOORS)
+        elif t == "frontend/get_system_data":
+            self.result(mid, {"value": HOME_SETTINGS if m.get("key") == "home" else None})
+        elif t == "usage_prediction/common_control":
+            self.result(mid, {"entities": PREDICTED})
+        elif t == "auth/current_user":
+            self.result(mid, {"id": "u1", "name": "Alex", "is_admin": True})
         elif t == "frontend/get_user_data":
             self.result(mid, {"value": {"language": "fr", "number_format": "language"} if m.get("key") == "language" else None})
         elif t == "lovelace/config":
@@ -520,6 +537,7 @@ class Conn:
             self.result(mid)
             text = m["template"].replace("{{ states('sensor.salon_temperature') }}",
                                          STATES["sensor.salon_temperature"]["state"])
+            text = text.replace("{{ user }}", (m.get("variables") or {}).get("user", ""))
             self.send({"id": mid, "type": "event", "event": {"result": text, "listeners": {}}})
         else:
             self.error(mid, "unknown_command", f"Unknown command {t}")
