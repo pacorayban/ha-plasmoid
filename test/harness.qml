@@ -45,6 +45,13 @@ Window {
 
     Component.onCompleted: haClient.reconnect()
 
+    // --SWITCH=url                       → changes the dashboard setting 3 s after start
+    Timer {
+        interval: 3000
+        running: win.env("SWITCH") !== ""
+        onTriggered: dashView.dashboardPath = win.env("SWITCH")
+    }
+
     // --ACTION=domain.service:entity_id  → called 3 s after start (tests the state round trip)
     // --MOREINFO=entity_id               → opens the detail popup 3.5 s after start
     Timer {

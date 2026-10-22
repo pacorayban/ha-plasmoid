@@ -36,7 +36,6 @@ Item {
         return { path: segs.length ? decodeURIComponent(segs[0]) : "",
                  view: segs.length > 1 ? decodeURIComponent(segs[1]) : "" };
     }
-    readonly property var target: parseTarget(dashboardPath)
 
     readonly property var views: dashboard ? dashboard.views : []
     readonly property var tabIndices: {
@@ -126,15 +125,18 @@ Item {
 
     // ------------------------------------------------------------ loading
 
-    function setDashboard(d) {
+    // Each load gets a number; answers from an older load are ignored.
+    property int _loadGen: 0
+
+    function setDashboard(d, t) {
         var keep = dashboard && view ? view.path : undefined;
         dashboard = d;
         loadError = "";
         var idx = -1;
         if (keep !== undefined)
             idx = viewIndexFor(String(keep));        // reload: stay on the same view
-        if (idx < 0 && target.view !== "")
-            idx = viewIndexFor(target.view);         // view given in the URL (may be a sub-view)
+        if (idx < 0 && t.view !== "")
+            idx = viewIndexFor(t.view);              // view given in the URL (may be a sub-view)
         if (idx < 0) {
             idx = Math.min(viewIndex, Math.max(0, views.length - 1));
             if (!views[idx] || views[idx].subview)
@@ -146,35 +148,43 @@ Item {
     }
 
     // HA's "Home" panel (/home): generated from its own settings and usage predictions.
-    function loadHome() {
+    function loadHome(gen, t) {
         var cl = client;
         Promise.all([
             cl.call({ type: "frontend/get_system_data", key: "home" }).catch(function () { return { value: null }; }),
             cl.call({ type: "usage_prediction/common_control" }).catch(function () { return { entities: [] }; })
         ]).then(function (r) {
-            dash.setDashboard(Strategy.generateHome(cl, (r[0] && r[0].value) || {}, (r[1] && r[1].entities) || []));
+            if (gen === dash._loadGen)
+                dash.setDashboard(Strategy.generateHome(cl, (r[0] && r[0].value) || {}, (r[1] && r[1].entities) || []), t);
         });
     }
 
     function loadConfig() {
         if (!client || !client.ready)
             return;
-        var path = target.path;
-        if (path === "home") {
-            loadHome();
+        // Parse here rather than reading `target`: when the setting just changed,
+        // that binding may not be updated yet and would still hold the old URL.
+        var t = parseTarget(dashboardPath);
+        var gen = ++_loadGen;
+        loadError = "";
+        if (t.path === "home") {
+            loadHome(gen, t);
             return;
         }
-        var urlPath = (path === "" || path === "lovelace") ? null : path;
+        var urlPath = (t.path === "" || t.path === "lovelace") ? null : t.path;
         client.call({ type: "lovelace/config", url_path: urlPath, force: false })
             .then(function (raw) {
-                dash.setDashboard(Strategy.resolveDashboard(dash.client, raw));
+                if (gen === dash._loadGen)
+                    dash.setDashboard(Strategy.resolveDashboard(dash.client, raw), t);
             }, function (err) {
+                if (gen !== dash._loadGen)
+                    return;
                 if (err && err.code === "config_not_found" && urlPath === null) {
                     // No "Overview" dashboard: like the web UI, fall back to the Home panel.
-                    dash.loadHome();
+                    dash.loadHome(gen, t);
                 } else {
                     dash.dashboard = null;
-                    dash.loadError = "Tableau de bord « " + (path || "par défaut") + " » introuvable : "
+                    dash.loadError = "Tableau de bord « " + (t.path || "par défaut") + " » introuvable : "
                                      + ((err && err.message) ? err.message : JSON.stringify(err));
                 }
             });
@@ -190,7 +200,7 @@ Item {
         target: dash.client
         function onLoaded() { dash.loadConfig(); }
         function onLovelaceUpdated(urlPath) {
-            var mine = dash.target.path;
+            var mine = dash.parseTarget(dash.dashboardPath).path;
             if ((urlPath || "") === mine || (!urlPath && mine === "lovelace"))
                 dash.loadConfig();
         }
