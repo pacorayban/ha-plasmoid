@@ -2,6 +2,10 @@
 
 *[English version](README.md)*
 
+| Thème clair | Thème sombre |
+|---|---|
+| ![Page Accueil, thème Breeze clair](docs/home-light.jpg) | ![Page Accueil, thème Breeze sombre](docs/home-dark.jpg) |
+
 Affiche un tableau de bord Home Assistant sur le bureau KDE Plasma, avec ses cartes
 redessinées en QML natif : thème Plasma, mises à jour en temps réel, actions au clic.
 

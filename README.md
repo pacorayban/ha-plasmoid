@@ -2,6 +2,10 @@
 
 *[Version française](README.fr.md)*
 
+| Light theme | Dark theme |
+|---|---|
+| ![Home page, light Breeze theme](docs/home-light.jpg) | ![Home page, dark Breeze theme](docs/home-dark.jpg) |
+
 Shows a Home Assistant dashboard on the KDE Plasma desktop, with its cards redrawn in
 native QML: it follows your Plasma theme, updates in real time and lets you act on your
 devices with a click.
