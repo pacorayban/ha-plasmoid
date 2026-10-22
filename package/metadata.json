@@ -6,6 +6,7 @@
                 "Name": "Paul de Nazelle"
             }
         ],
+        "BugReportUrl": "https://github.com/pacorayban/ha-plasmoid/issues",
         "Category": "Online Services",
         "Description": "Shows your Home Assistant dashboards on the desktop, with their cards drawn natively and updated live",
         "Description[fr]": "Affiche vos tableaux de bord Home Assistant sur le bureau, avec leurs cartes dessinées nativement et mises à jour en direct",
@@ -14,7 +15,8 @@
         "License": "MIT",
         "Name": "Home Assistant Dashboard",
         "Name[fr]": "Tableau de bord Home Assistant",
-        "Version": "0.1.0"
+        "Version": "0.1.0",
+        "Website": "https://github.com/pacorayban/ha-plasmoid"
     },
     "X-Plasma-API-Minimum-Version": "6.0"
 }

@@ -3,6 +3,7 @@
 **Name:** Home Assistant Dashboard
 **Category:** Plasma 6 Applets
 **License:** MIT
+**Source / bug reports:** https://github.com/pacorayban/ha-plasmoid
 
 ## Summary
 
@@ -12,7 +13,8 @@ Your Home Assistant dashboards on the Plasma desktop, drawn natively and updated
 
 > **Transparency:** this widget was entirely vibe-coded: all of its code was written by an AI
 > (Claude, through Claude Code) from my instructions. I tested it on my own Home Assistant
-> instance, but I have not reviewed the code line by line. Bug reports are welcome.
+> instance, but I have not reviewed the code line by line. Bug reports are welcome:
+> https://github.com/pacorayban/ha-plasmoid/issues
 
 Home Assistant Dashboard shows a Home Assistant dashboard on your desktop, with its cards
 redrawn in native QML: it follows your Plasma theme, updates in real time over the WebSocket
@@ -43,7 +45,7 @@ The token is stored in plain text in your Plasma configuration.
 > **Transparence :** ce widget a été entièrement « vibe-codé » : tout son code a été écrit par
 > une IA (Claude, via Claude Code) à partir de mes instructions. Je l'ai testé sur ma propre
 > instance Home Assistant, mais je n'ai pas relu le code ligne par ligne. Les signalements de
-> bugs sont les bienvenus.
+> bugs sont les bienvenus : https://github.com/pacorayban/ha-plasmoid/issues
 
 Home Assistant Dashboard affiche un tableau de bord Home Assistant sur le bureau, avec ses
 cartes redessinées en QML natif : thème Plasma, mises à jour en temps réel, actions au clic.
