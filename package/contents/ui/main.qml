@@ -39,11 +39,26 @@ PlasmoidItem {
         }
     }
 
+    // The desktop grows a widget to its preferred size every time it loads
+    // (plasma-workspace GridLayoutManager::adjustToItemSizeHints), so a large
+    // preferred size would undo the user's resizing at each login. Ask for a
+    // comfortable size only the first time, then fall back to the minimum.
+    // In a panel the preferred size is the popup size, so it is always kept.
+    readonly property bool onDesktop: Plasmoid.formFactor === PlasmaCore.Types.Planar
+    readonly property bool firstPlacement: !Plasmoid.configuration.initialSizeApplied
+    readonly property bool wantComfortableSize: !onDesktop || firstPlacement
+
+    Timer {
+        interval: 5000
+        running: root.firstPlacement && root.onDesktop
+        onTriggered: Plasmoid.configuration.initialSizeApplied = true
+    }
+
     fullRepresentation: DashboardView {
-        Layout.preferredWidth: Kirigami.Units.gridUnit * 40
-        Layout.preferredHeight: Kirigami.Units.gridUnit * 30
         Layout.minimumWidth: Kirigami.Units.gridUnit * 12
         Layout.minimumHeight: Kirigami.Units.gridUnit * 10
+        Layout.preferredWidth: root.wantComfortableSize ? Kirigami.Units.gridUnit * 40 : Layout.minimumWidth
+        Layout.preferredHeight: root.wantComfortableSize ? Kirigami.Units.gridUnit * 30 : Layout.minimumHeight
 
         client: haClient
         dashboardPath: Plasmoid.configuration.dashboard

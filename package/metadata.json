@@ -15,7 +15,7 @@
         "License": "MIT",
         "Name": "Home Assistant Dashboard",
         "Name[fr]": "Tableau de bord Home Assistant",
-        "Version": "0.2.0",
+        "Version": "0.2.1",
         "Website": "https://github.com/pacorayban/ha-plasmoid"
     },
     "X-Plasma-API-Minimum-Version": "6.0"

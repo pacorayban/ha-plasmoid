@@ -14,6 +14,7 @@ KCM.SimpleKCM {
     property alias cfg_cardOpacity: opacitySpin.value
     property alias cfg_showHeader: headerCheck.checked
     property int cfg_viewIndex
+    property bool cfg_initialSizeApplied
 
     Kirigami.FormLayout {
         QQC2.TextField {
