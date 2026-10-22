@@ -1,7 +1,7 @@
 # KDE Store page
 
 **Name:** Home Assistant Dashboard
-**Category:** Plasma 6 Widgets
+**Category:** Plasma 6 Applets
 **License:** MIT
 
 ## Summary

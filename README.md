@@ -54,7 +54,7 @@ La page de configuration Plasma, elle, suit la langue du système.
 ./package.sh        # → dist/hadashboard-<version>.plasmoid
 ```
 
-Sur [store.kde.org](https://store.kde.org) : *Add product* → catégorie *Plasma 6 Widgets*,
+Sur [store.kde.org](https://store.kde.org) : *Add product* → catégorie *Plasma 6 Applets*,
 puis téléverser le fichier `.plasmoid`. Texte de présentation prêt dans `STORE.md`.
 Penser à augmenter `Version` dans `package/metadata.json` à chaque nouvelle version.
 
