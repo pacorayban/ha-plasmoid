@@ -295,6 +295,71 @@ LOVELACE = {
     ],
 }
 
+# English sample data (--lang en), used for the store screenshots.
+NAMES_EN = {
+    "Arrosage jardin": "Garden watering", "Batterie capteur porte": "Door sensor battery",
+    "CO₂ bureau": "Office CO₂", "Cafetière": "Coffee maker", "Caméra entrée": "Entrance camera",
+    "Chambre": "Bedroom", "Chauffage salon": "Living room heating",
+    "Consigne ballon": "Water heater setpoint", "Dernier réveil": "Last wake-up",
+    "Humidité salon": "Living room humidity", "Lampe d'appoint": "Floor lamp", "Maison": "Home",
+    "Mise à jour HA": "HA update", "Mode invités": "Guest mode", "Mode maison": "House mode",
+    "Mouvement couloir": "Hallway motion", "Plafonnier": "Ceiling light", "Porte d'entrée": "Front door",
+    "Réveil": "Wake-up", "Serrure entrée": "Front door lock", "Soirée": "Evening", "Soleil": "Sun",
+    "Sonos salon": "Living room Sonos", "Température salon": "Living room temperature",
+    "Ventilateur": "Fan", "Volet chambre": "Bedroom shutter", "Énergie totale": "Total energy",
+    "Salon": "Living room", "Cuisine": "Kitchen", "Bureau": "Office", "Entrée": "Entrance",
+    "Rez-de-chaussée": "Ground floor", "Étage": "First floor", "Station Netatmo": "Netatmo station",
+    "Ma maison": "My home", "Détails": "Details", "Sécurité": "Security", "Météo": "Weather",
+    "Réglages": "Settings", "Température mesurée": "Measured temperature", "Résumé": "At a glance",
+    "Historique": "History", "Absent": "Away", "Nuit": "Night",
+    "Il fait **{{ states('sensor.salon_temperature') }} °C** au salon.\n\n- liste\n- *italique*":
+        "It is **{{ states('sensor.salon_temperature') }} °C** in the living room.\n\n- Water the plants\n- *Bins go out tomorrow*",
+    "⚠️ **La porte est déverrouillée !**": "⚠️ **The front door is unlocked!**",
+}
+
+TR_EN = {
+    "component.light.entity_component._.state.on": "On", "component.light.entity_component._.state.off": "Off",
+    "component.switch.entity_component._.state.on": "On", "component.switch.entity_component._.state.off": "Off",
+    "component.fan.entity_component._.state.on": "On", "component.fan.entity_component._.state.off": "Off",
+    "component.input_boolean.entity_component._.state.on": "On", "component.input_boolean.entity_component._.state.off": "Off",
+    "component.binary_sensor.entity_component.door.state.on": "Open", "component.binary_sensor.entity_component.door.state.off": "Closed",
+    "component.binary_sensor.entity_component.motion.state.on": "Detected", "component.binary_sensor.entity_component.motion.state.off": "Clear",
+    "component.climate.entity_component._.state.heat": "Heat", "component.climate.entity_component._.state.off": "Off",
+    "component.climate.entity_component._.state.auto": "Auto",
+    "component.climate.entity_component._.state_attributes.hvac_action.state.heating": "Heating",
+    "component.climate.entity_component._.state_attributes.hvac_action.state.idle": "Idle",
+    "component.climate.entity_component._.state_attributes.hvac_action.name": "Action",
+    "component.cover.entity_component._.state.open": "Open", "component.cover.entity_component._.state.closed": "Closed",
+    "component.lock.entity_component._.state.locked": "Locked", "component.lock.entity_component._.state.unlocked": "Unlocked",
+    "component.media_player.entity_component._.state.playing": "Playing", "component.media_player.entity_component._.state.paused": "Paused",
+    "component.media_player.entity_component._.state.off": "Off",
+    "component.person.entity_component._.state.home": "Home", "component.person.entity_component._.state.not_home": "Away",
+    "component.weather.entity_component._.state.partlycloudy": "Partly cloudy", "component.weather.entity_component._.state.sunny": "Sunny",
+    "component.script.entity_component._.state.off": "Off", "component.camera.entity_component._.state.idle": "Idle",
+    "component.light.title": "Light", "component.sensor.title": "Sensor", "component.person.title": "Person",
+    "component.scene.title": "Scene", "component.update.title": "Update",
+}
+
+USER_NAME = "Alex"
+
+
+def localize_en():
+    """Rewrites the sample data in English (names, areas, dashboard, translations)."""
+    global STATES, AREAS, FLOORS, DEVICES, LOVELACE, TR, USER_NAME
+    def tr(obj):
+        s = json.dumps(obj, ensure_ascii=False)
+        for fr, en in sorted(NAMES_EN.items(), key=lambda kv: -len(kv[0])):
+            s = s.replace(json.dumps(fr, ensure_ascii=False), json.dumps(en, ensure_ascii=False))
+        return json.loads(s)
+    STATES, AREAS, FLOORS, DEVICES, LOVELACE = (tr(x) for x in (STATES, AREAS, FLOORS, DEVICES, LOVELACE))
+    TR = TR_EN
+    USER_NAME = "Alex"
+    # No camera feed nor map in the fake server: keep them out of the screenshots.
+    for view in LOVELACE["views"]:
+        if "cards" in view:
+            view["cards"] = [c for c in view["cards"] if c["type"] not in ("map", "picture-entity")]
+
+
 TOGGLE_ON = {"light", "switch", "fan", "input_boolean", "automation", "script"}
 
 
@@ -505,7 +570,7 @@ class Conn:
         elif t == "usage_prediction/common_control":
             self.result(mid, {"entities": PREDICTED})
         elif t == "auth/current_user":
-            self.result(mid, {"id": "u1", "name": "Alex", "is_admin": True})
+            self.result(mid, {"id": "u1", "name": USER_NAME, "is_admin": True})
         elif t == "frontend/get_user_data":
             self.result(mid, {"value": {"language": self.lang, "number_format": "language"} if m.get("key") == "language" else None})
         elif t == "lovelace/config":
@@ -613,6 +678,8 @@ def main():
     args = ap.parse_args()
     Handler.no_config = args.no_config
     Conn.lang = args.lang
+    if args.lang == "en":
+        localize_en()
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     socketserver.ThreadingTCPServer.daemon_threads = True
     srv = socketserver.ThreadingTCPServer(("127.0.0.1", args.port), Handler)
