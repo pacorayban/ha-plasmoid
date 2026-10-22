@@ -90,6 +90,20 @@ STATES = {s["entity_id"]: s for s in [
     st("sun.sun", "above_horizon", {"friendly_name": "Soleil"}),
     st("camera.entree", "idle", {"friendly_name": "Caméra entrée", "entity_picture": "/api/camera_proxy/camera.entree?token=abc"}),
     st("update.home_assistant", "off", {"friendly_name": "Mise à jour HA"}),
+    st("media_player.ampli_main", "playing", {"friendly_name": "Ampli Main", "media_title": "Pourquoi tu pars",
+                                              "media_artist": "Montmartre", "media_duration": 240, "media_position": 80,
+                                              "volume_level": 0.45, "is_volume_muted": False, "source": "NET",
+                                              "source_list": ["NET", "TV", "Blu-ray", "Phono", "Tuner"],
+                                              "sound_mode": "STEREO", "sound_mode_list": ["STEREO", "MOVIE", "MUSIC", "DIRECT"],
+                                              "supported_features": 89533, "device_class": "receiver",
+                                              "entity_picture": "/api/media_player_proxy/media_player.ampli_main?token=x"}),
+    st("media_player.ampli_zone2", "playing", {"friendly_name": "Ampli Zone2", "media_title": "Pourquoi tu pars",
+                                               "media_artist": "Montmartre", "volume_level": 0.3, "is_volume_muted": False,
+                                               "source": "NET", "source_list": ["NET", "TV", "Tuner"],
+                                               "sound_mode": "MOVIE", "sound_mode_list": ["STEREO", "MOVIE", "MUSIC"],
+                                               "supported_features": 89533, "device_class": "receiver"}),
+    st("switch.ampli_alimentation", "on", {"friendly_name": "Ampli alimentation"}),
+    st("switch.enceintes", "on", {"friendly_name": "Enceintes"}),
     st("zone.home", "1", {"friendly_name": "Maison", "latitude": 46.16, "longitude": -1.15}),
 ]}
 
@@ -199,7 +213,9 @@ TR = {
     "component.cover.entity_component._.state.closed": "Fermé",
     "component.lock.entity_component._.state.locked": "Verrouillé",
     "component.lock.entity_component._.state.unlocked": "Déverrouillé",
-    "component.media_player.entity_component._.state.playing": "Lecture",
+    "component.media_player.entity_component._.state.playing": "Lecture en cours",
+    "component.media_player.entity_component._.state_attributes.source.name": "Source",
+    "component.media_player.entity_component._.state_attributes.sound_mode.name": "Mode sonore",
     "component.media_player.entity_component._.state.paused": "En pause",
     "component.media_player.entity_component._.state.off": "Éteint",
     "component.person.entity_component._.state.home": "À la maison",
@@ -249,6 +265,28 @@ LOVELACE = {
                     {"type": "weather-forecast", "entity": "weather.maison", "forecast_type": "daily"},
                     {"type": "area", "area": "salon"},
                     {"type": "area", "area": "chambre"},
+                ]},
+            ],
+        },
+        {
+            "title": "Musique", "path": "music", "type": "sections", "max_columns": 2,
+            "sections": [
+                {"type": "grid", "cards": [
+                    {"type": "heading", "heading": "Ampli"},
+                    {"type": "tile", "entity": "media_player.ampli_main"},
+                    {"type": "tile", "entity": "media_player.ampli_zone2"},
+                    {"type": "tile", "entity": "switch.ampli_alimentation", "features": [{"type": "toggle"}]},
+                    {"type": "tile", "entity": "switch.enceintes", "features": [{"type": "toggle"}]},
+                ]},
+                {"type": "grid", "cards": [
+                    {"type": "heading", "heading": "Média"},
+                    {"type": "media-control", "entity": "media_player.ampli_main"},
+                    {"type": "tile", "entity": "media_player.ampli_main", "features": [{"type": "media-player-playback"}]},
+                    {"type": "tile", "entity": "media_player.ampli_zone2", "features": [{"type": "media-player-playback"}]},
+                    {"type": "tile", "entity": "media_player.ampli_main", "features": [{"type": "media-player-volume-slider"}]},
+                    {"type": "tile", "entity": "media_player.ampli_zone2", "features": [{"type": "media-player-volume-slider"}]},
+                    {"type": "tile", "entity": "media_player.ampli_main", "features": [{"type": "media-player-source"}]},
+                    {"type": "tile", "entity": "media_player.ampli_zone2", "features": [{"type": "media-player-sound-mode"}]},
                 ]},
             ],
         },
@@ -311,7 +349,8 @@ NAMES_EN = {
     "Rez-de-chaussée": "Ground floor", "Étage": "First floor", "Station Netatmo": "Netatmo station",
     "Ma maison": "My home", "Détails": "Details", "Sécurité": "Security", "Météo": "Weather",
     "Réglages": "Settings", "Température mesurée": "Measured temperature", "Résumé": "At a glance",
-    "Historique": "History", "Absent": "Away", "Nuit": "Night",
+    "Historique": "History", "Musique": "Music", "Média": "Media", "Ampli alimentation": "Amplifier power",
+    "Enceintes": "Speakers", "Ampli": "Amplifier", "Absent": "Away", "Nuit": "Night",
     "Il fait **{{ states('sensor.salon_temperature') }} °C** au salon.\n\n- liste\n- *italique*":
         "It is **{{ states('sensor.salon_temperature') }} °C** in the living room.\n\n- Water the plants\n- *Bins go out tomorrow*",
     "⚠️ **La porte est déverrouillée !**": "⚠️ **The front door is unlocked!**",
@@ -333,6 +372,8 @@ TR_EN = {
     "component.lock.entity_component._.state.locked": "Locked", "component.lock.entity_component._.state.unlocked": "Unlocked",
     "component.media_player.entity_component._.state.playing": "Playing", "component.media_player.entity_component._.state.paused": "Paused",
     "component.media_player.entity_component._.state.off": "Off",
+    "component.media_player.entity_component._.state_attributes.source.name": "Source",
+    "component.media_player.entity_component._.state_attributes.sound_mode.name": "Sound mode",
     "component.person.entity_component._.state.home": "Home", "component.person.entity_component._.state.not_home": "Away",
     "component.weather.entity_component._.state.partlycloudy": "Partly cloudy", "component.weather.entity_component._.state.sunny": "Sunny",
     "component.script.entity_component._.state.off": "Off", "component.camera.entity_component._.state.idle": "Idle",
@@ -399,7 +440,22 @@ def call_service(domain, service, data, target):
         if not s:
             continue
         cur = s["state"]
-        if service == "toggle":
+        if service == "volume_set":
+            HUB.set_state(eid, None, volume_level=data["volume_level"])
+        elif service == "volume_mute":
+            HUB.set_state(eid, None, is_volume_muted=data["is_volume_muted"])
+        elif service in ("volume_up", "volume_down"):
+            v = s["attributes"].get("volume_level", 0.5) + (0.05 if service == "volume_up" else -0.05)
+            HUB.set_state(eid, None, volume_level=max(0, min(1, v)))
+        elif service == "select_source":
+            HUB.set_state(eid, None, source=data["source"])
+        elif service == "select_sound_mode":
+            HUB.set_state(eid, None, sound_mode=data["sound_mode"])
+        elif service in ("media_play", "media_pause", "media_stop"):
+            HUB.set_state(eid, {"media_play": "playing", "media_pause": "paused", "media_stop": "idle"}[service])
+        elif service in ("media_next_track", "media_previous_track"):
+            HUB.set_state(eid, None, media_position=0)
+        elif service == "toggle":
             if d == "cover":
                 HUB.set_state(eid, "closed" if cur == "open" else "open")
             else:
@@ -563,6 +619,12 @@ class Conn:
             self.result(mid, {"resources": ICONS if m.get("category") == "entity_component" else {}})
         elif t == "frontend/get_translations":
             self.result(mid, {"resources": TR})
+        elif t == "get_panels":
+            self.result(mid, {
+                "lovelace": {"component_name": "lovelace", "title": None, "url_path": "lovelace"},
+                "dashboard-music": {"component_name": "lovelace", "title": "Musique" if self.lang == "fr" else "Music",
+                                    "icon": "mdi:music", "url_path": "dashboard-music"},
+            })
         elif t == "config/floor_registry/list":
             self.result(mid, FLOORS)
         elif t == "frontend/get_system_data":
@@ -574,7 +636,10 @@ class Conn:
         elif t == "frontend/get_user_data":
             self.result(mid, {"value": {"language": self.lang, "number_format": "language"} if m.get("key") == "language" else None})
         elif t == "lovelace/config":
-            if self.no_config:
+            if m.get("url_path") == "dashboard-music":
+                # Single-view dashboard without a "title" key: its name comes from get_panels.
+                self.result(mid, {"views": [v for v in LOVELACE["views"] if v.get("path") == "music"]})
+            elif self.no_config:
                 self.error(mid, "config_not_found", "No config found.")
             else:
                 self.result(mid, LOVELACE)
@@ -652,7 +717,12 @@ class Handler(socketserver.BaseRequestHandler):
             return
 
         status, body, ctype = "404 Not Found", b"not found", "text/plain"
-        if path.startswith("/static/mdi/"):
+        if path.startswith("/api/media_player_proxy/"):
+            art = "/usr/share/wallpapers/Next/contents/images/1440x2960.png"
+            if os.path.exists(art):
+                with open(art, "rb") as f:
+                    body, status, ctype = f.read(), "200 OK", "image/png"
+        elif path.startswith("/static/mdi/"):
             try:
                 body, status, ctype = fetch_icon(path[len("/static/mdi/"):]), "200 OK", "application/json"
             except Exception as e:  # noqa: BLE001

@@ -176,7 +176,7 @@ Item {
         client.call({ type: "lovelace/config", url_path: urlPath, force: false })
             .then(function (raw) {
                 if (gen === dash._loadGen)
-                    dash.setDashboard(Strategy.resolveDashboard(dash.client, raw), t);
+                    dash.setDashboard(Strategy.resolveDashboard(dash.client, raw, urlPath), t);
             }, function (err) {
                 if (gen !== dash._loadGen)
                     return;
@@ -269,8 +269,7 @@ Item {
                 Layout.fillWidth: true
                 visible: dash.tabIndices.length <= 1 && !(dash.view && dash.view.subview)
                 level: 4
-                text: dash.view && dash.view.title && !(dash.dashboard && dash.dashboard.generated)
-                      ? dash.view.title : (dash.dashboard ? dash.dashboard.title : "")
+                text: dash.dashboard ? dash.dashboard.title : ""
                 elide: Text.ElideRight
             }
 

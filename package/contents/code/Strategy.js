@@ -149,9 +149,19 @@ function generateOverview(client) {
 
 // Turns whatever lovelace/config returned into a dashboard we can draw.
 // `raw` is null when the dashboard has no stored config.
-function resolveDashboard(client, raw) {
+// Title shown by HA in its top bar: the dashboard's name in the sidebar.
+function dashboardTitle(client, urlPath, raw) {
+    var panel = client.panels ? client.panels[urlPath || "lovelace"] : null;
+    if (panel && panel.title)
+        return panel.title;
+    if (raw && raw.title)
+        return raw.title;
+    return urlPath ? urlPath : Tr.tr(client, "Overview");
+}
+
+function resolveDashboard(client, raw, urlPath) {
     if (!raw || raw.strategy || !raw.views || raw.views.length === 0)
-        return { title: Tr.tr(client, "Overview"), generated: true, views: [generateOverview(client)] };
+        return { title: dashboardTitle(client, urlPath, raw), generated: true, views: [generateOverview(client)] };
     var views = [];
     for (var i = 0; i < raw.views.length; i++) {
         var v = raw.views[i];
@@ -165,7 +175,7 @@ function resolveDashboard(client, raw) {
             views.push(v);
         }
     }
-    return { title: raw.title || "Home Assistant", generated: false, views: views };
+    return { title: dashboardTitle(client, urlPath, raw), generated: false, views: views };
 }
 
 // ======================================================================

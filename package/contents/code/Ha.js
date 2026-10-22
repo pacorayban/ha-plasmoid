@@ -573,3 +573,75 @@ function supports(st, bit) {
     var f = st && st.attributes ? Number(st.attributes.supported_features || 0) : 0;
     return (f & bit) !== 0;
 }
+
+// ---------------------------------------------------------------- media players
+
+var MP = {
+    PAUSE: 1, SEEK: 2, VOLUME_SET: 4, VOLUME_MUTE: 8, PREVIOUS_TRACK: 16, NEXT_TRACK: 32,
+    TURN_ON: 128, TURN_OFF: 256, PLAY_MEDIA: 512, VOLUME_STEP: 1024, SELECT_SOURCE: 2048,
+    STOP: 4096, PLAY: 16384, SHUFFLE_SET: 32768, SELECT_SOUND_MODE: 65536, REPEAT_SET: 262144
+};
+
+var MP_CONTROL_FEATURES = {
+    turn_on: [MP.TURN_ON], turn_off: [MP.TURN_OFF], power: [MP.TURN_ON, MP.TURN_OFF],
+    media_play: [MP.PLAY], media_pause: [MP.PAUSE], media_play_pause: [MP.PLAY, MP.PAUSE],
+    media_stop: [MP.STOP], media_previous_track: [MP.PREVIOUS_TRACK], media_next_track: [MP.NEXT_TRACK],
+    volume_down: [MP.VOLUME_STEP], volume_up: [MP.VOLUME_STEP], volume_mute: [MP.VOLUME_MUTE],
+    shuffle: [MP.SHUFFLE_SET], repeat: [MP.REPEAT_SET]
+};
+
+// Buttons of HA's "media-player-playback" tile feature (same defaults and
+// enabled/disabled rules as the web UI). Each: {icon, service, data, disabled}.
+function mediaButtons(entityId, st, controls) {
+    if (!st)
+        return [];
+    var a = st.attributes || {};
+    var assumed = a.assumed_state === true;
+    var active = isActive(entityId, st);
+    var playing = st.state === "playing";
+    var context = playing || st.state === "paused" || assumed;
+    var unavailable = st.state === "unavailable";
+    var list = controls && controls.length ? controls
+        : (assumed ? ["turn_on", "turn_off", "media_previous_track", "media_play", "media_pause", "media_next_track"]
+                   : ["power", "media_previous_track", "media_play_pause", "media_next_track"]);
+    var out = [];
+    list.forEach(function (c) {
+        var bits = MP_CONTROL_FEATURES[c];
+        if (!bits || !bits.some(function (b) { return supports(st, b); }))
+            return;
+        var canPause = supports(st, MP.PAUSE);
+        switch (c) {
+        case "turn_on": out.push({ icon: "mdi:power-on", service: "turn_on", disabled: unavailable || (active && !assumed) }); break;
+        case "turn_off": out.push({ icon: "mdi:power-off", service: "turn_off", disabled: !active && !assumed }); break;
+        case "power":
+            out.push({ icon: "mdi:power-standby", service: active ? "turn_off" : "turn_on",
+                       disabled: unavailable || !supports(st, active ? MP.TURN_OFF : MP.TURN_ON) });
+            break;
+        case "media_play": out.push({ icon: "mdi:play", service: "media_play", disabled: !assumed && (!active || playing) }); break;
+        case "media_pause": out.push({ icon: "mdi:pause", service: "media_pause", disabled: !playing && !assumed }); break;
+        case "media_play_pause":
+            out.push({ icon: !playing ? "mdi:play" : (canPause ? "mdi:pause" : "mdi:stop"),
+                       service: !playing ? "media_play" : (canPause ? "media_pause" : "media_stop"), disabled: !active });
+            break;
+        case "media_stop": out.push({ icon: "mdi:stop", service: "media_stop", disabled: !context }); break;
+        case "media_previous_track": out.push({ icon: "mdi:skip-previous", service: "media_previous_track", disabled: !context }); break;
+        case "media_next_track": out.push({ icon: "mdi:skip-next", service: "media_next_track", disabled: !context }); break;
+        case "volume_down": out.push({ icon: "mdi:volume-minus", service: "volume_down", disabled: !active }); break;
+        case "volume_up": out.push({ icon: "mdi:volume-plus", service: "volume_up", disabled: !active }); break;
+        case "volume_mute":
+            out.push({ icon: a.is_volume_muted ? "mdi:volume-off" : "mdi:volume-high", service: "volume_mute",
+                       data: { is_volume_muted: !a.is_volume_muted }, disabled: !active, on: !!a.is_volume_muted });
+            break;
+        case "shuffle":
+            out.push({ icon: a.shuffle === true ? "mdi:shuffle" : "mdi:shuffle-disabled", service: "shuffle_set",
+                       data: { shuffle: a.shuffle !== true }, disabled: !context });
+            break;
+        case "repeat":
+            var next = a.repeat === "off" || !a.repeat ? "all" : (a.repeat === "all" ? "one" : "off");
+            out.push({ icon: a.repeat === "all" ? "mdi:repeat" : (a.repeat === "one" ? "mdi:repeat-once" : "mdi:repeat-off"),
+                       service: "repeat_set", data: { repeat: next }, disabled: !context });
+            break;
+        }
+    });
+    return out;
+}

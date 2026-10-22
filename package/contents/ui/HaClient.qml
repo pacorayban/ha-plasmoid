@@ -32,6 +32,7 @@ Item {
     property var floors: ({})
     property var floorOrder: []
     property string userName: ""
+    property var panels: ({})       // sidebar panels, for dashboard titles
     property var iconDefs: ({})
     property var entityIconDefs: ({})
     property var translations: ({})
@@ -360,13 +361,15 @@ Item {
             call({ type: "frontend/get_translations", language: lang, category: "entity_component" }).catch(fallback({ resources: {} }, "translations")),
             call({ type: "frontend/get_translations", language: lang, category: "title" }).catch(fallback({ resources: {} }, "titles")),
             call({ type: "config/floor_registry/list" }).catch(fallback([], "floor registry")),
-            call({ type: "auth/current_user" }).catch(fallback({}, "current user"))
+            call({ type: "auth/current_user" }).catch(fallback({}, "current user")),
+            call({ type: "get_panels" }).catch(fallback({}, "panels"))
         ]).then(function (r) {
             var fl = {}, forder = [];
             (r[8] || []).forEach(function (f) { fl[f.floor_id] = f; forder.push(f.floor_id); });
             client.floors = fl;
             client.floorOrder = forder;
             client.userName = (r[9] && r[9].name) || "";
+            client.panels = r[10] || {};
 
             var st = {};
             r[1].forEach(function (s) { st[s.entity_id] = s; });

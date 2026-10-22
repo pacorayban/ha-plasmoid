@@ -61,8 +61,6 @@ CardFrame {
             return base + " · " + attrs.current_position + " %";
         if (domain === "climate" && attrs.current_temperature !== undefined && attrs.current_temperature !== null)
             return base + " · " + Ha.withUnit(Ha.formatNumber(client, attrs.current_temperature, 1), Ha.temperatureUnit(client));
-        if (domain === "media_player" && attrs.media_title)
-            return attrs.media_title + (attrs.media_artist ? " · " + attrs.media_artist : "");
         return base;
     }
 
@@ -142,34 +140,184 @@ CardFrame {
                 required property var modelData
                 readonly property string ftype: modelData && modelData.type ? modelData.type : ""
                 Layout.fillWidth: true
+                Layout.topMargin: Kirigami.Units.smallSpacing
                 visible: item !== null
-                sourceComponent: {
-                    switch (ftype) {
-                    case "light-brightness": return card.domain === "light" ? brightnessComp : null;
-                    case "cover-open-close": return coverComp;
-                    case "target-temperature": return targetComp;
-                    case "climate-hvac-modes": return hvacComp;
-                    case "toggle": return toggleComp;
-                    default: return null;
-                    }
+                onLoaded: if (item && item.hasOwnProperty("fcfg")) item.fcfg = modelData
+                sourceComponent: card.featureComponent(ftype)
+            }
+        }
+    }
+
+    // Tile features (the controls under the tile), drawn like HA's.
+    function featureComponent(type) {
+        var mp = domain === "media_player";
+        switch (type) {
+        case "light-brightness": return domain === "light" ? brightnessComp : null;
+        case "cover-open-close": return coverComp;
+        case "cover-position": return coverPositionComp;
+        case "target-temperature": return targetComp;
+        case "climate-hvac-modes": return hvacComp;
+        case "toggle": return toggleComp;
+        case "fan-speed": return domain === "fan" ? fanSpeedComp : null;
+        case "lock-commands": return domain === "lock" ? lockComp : null;
+        case "numeric-input": return numericComp;
+        case "select-options": return (domain === "select" || domain === "input_select") ? selectComp : null;
+        case "media-player-playback": return mp ? playbackComp : null;
+        case "media-player-volume-slider": return mp && Ha.supports(st, Ha.MP.VOLUME_SET) ? volumeSliderComp : null;
+        case "media-player-volume-buttons": return mp && Ha.supports(st, Ha.MP.VOLUME_STEP) ? volumeButtonsComp : null;
+        case "media-player-source": return mp && (attrs.source_list || []).length ? sourceComp : null;
+        case "media-player-sound-mode": return mp && (attrs.sound_mode_list || []).length ? soundModeComp : null;
+        default: return null;
+        }
+    }
+
+    function mediaCall(b) {
+        Ha.svc(client, "media_player", b.service, entityId, b.data);
+    }
+
+    Component {
+        id: playbackComp
+        RowLayout {
+            property var fcfg: ({})
+            spacing: Kirigami.Units.smallSpacing
+            Repeater {
+                model: {
+                    var all = Ha.mediaButtons(card.entityId, card.st, parent.fcfg.controls);
+                    return parent.fcfg.hide_disabled_controls ? all.filter(function (b) { return !b.disabled; }) : all;
+                }
+                delegate: ControlButton {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    client: card.client
+                    icon: modelData.icon
+                    enabled: !modelData.disabled
+                    active: modelData.on === true
+                    tint: card.accent
+                    onClicked: card.mediaCall(modelData)
                 }
             }
         }
     }
 
     Component {
+        id: volumeSliderComp
+        RowLayout {
+            property var fcfg: ({})
+            spacing: Kirigami.Units.smallSpacing
+            ControlSlider {
+                Layout.fillWidth: true
+                enabled: card.st && card.st.state !== "unavailable"
+                tint: card.accent
+                value: Math.round(Number(card.attrs.volume_level || 0) * 100)
+                onValueSet: function (v) { Ha.svc(card.client, "media_player", "volume_set", card.entityId, { volume_level: v / 100 }); }
+            }
+            ControlButton {
+                visible: parent.fcfg.show_mute_button !== false && Ha.supports(card.st, Ha.MP.VOLUME_MUTE)
+                client: card.client
+                icon: card.attrs.is_volume_muted ? "mdi:volume-off" : "mdi:volume-high"
+                active: !!card.attrs.is_volume_muted
+                tint: card.accent
+                onClicked: Ha.svc(card.client, "media_player", "volume_mute", card.entityId, { is_volume_muted: !card.attrs.is_volume_muted })
+            }
+        }
+    }
+
+    Component {
+        id: volumeButtonsComp
+        RowLayout {
+            property var fcfg: ({})
+            spacing: Kirigami.Units.smallSpacing
+            Repeater {
+                model: Ha.mediaButtons(card.entityId, card.st,
+                                       parent.fcfg.show_mute_button === false ? ["volume_down", "volume_up"]
+                                                                              : ["volume_down", "volume_up", "volume_mute"])
+                delegate: ControlButton {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    client: card.client
+                    icon: modelData.icon
+                    enabled: !modelData.disabled
+                    active: modelData.on === true
+                    tint: card.accent
+                    onClicked: card.mediaCall(modelData)
+                }
+            }
+        }
+    }
+
+    Component {
+        id: sourceComp
+        ControlSelect {
+            property var fcfg: ({})
+            label: Ha.attributeNameDisplay(card.client, card.entityId, "source")
+            current: card.attrs.source || ""
+            options: fcfg.sources && fcfg.sources.length ? fcfg.sources : (card.attrs.source_list || [])
+            enabled: card.st && card.st.state !== "unavailable" && card.st.state !== "off"
+            onPicked: function (o) { Ha.svc(card.client, "media_player", "select_source", card.entityId, { source: o }); }
+        }
+    }
+
+    Component {
+        id: soundModeComp
+        ControlSelect {
+            property var fcfg: ({})
+            label: Ha.attributeNameDisplay(card.client, card.entityId, "sound_mode")
+            current: card.attrs.sound_mode || ""
+            options: fcfg.sound_modes && fcfg.sound_modes.length ? fcfg.sound_modes : (card.attrs.sound_mode_list || [])
+            enabled: card.st && card.st.state !== "unavailable" && card.st.state !== "off"
+            onPicked: function (o) { Ha.svc(card.client, "media_player", "select_sound_mode", card.entityId, { sound_mode: o }); }
+        }
+    }
+
+    Component {
+        id: selectComp
+        ControlSelect {
+            property var fcfg: ({})
+            current: card.st ? card.st.state : ""
+            options: fcfg.options && fcfg.options.length ? fcfg.options : (card.attrs.options || [])
+            onPicked: function (o) { Ha.svc(card.client, card.domain, "select_option", card.entityId, { option: o }); }
+        }
+    }
+
+    Component {
         id: brightnessComp
-        PC3.Slider {
-            id: bslider
+        ControlSlider {
             from: 1
             to: 100
+            tint: card.accent
             value: card.st && card.st.state === "on" && card.attrs.brightness ? Math.round(card.attrs.brightness / 2.55) : 0
-            onMoved: sendTimer.restart()
-            Timer {
-                id: sendTimer
-                interval: 300
-                onTriggered: Ha.svc(card.client, "light", "turn_on", card.entityId, { brightness_pct: Math.round(bslider.value) })
-            }
+            onValueSet: function (v) { Ha.svc(card.client, "light", "turn_on", card.entityId, { brightness_pct: Math.round(v) }); }
+        }
+    }
+
+    Component {
+        id: coverPositionComp
+        ControlSlider {
+            tint: card.accent
+            value: Number(card.attrs.current_position || 0)
+            onValueSet: function (v) { Ha.svc(card.client, "cover", "set_cover_position", card.entityId, { position: Math.round(v) }); }
+        }
+    }
+
+    Component {
+        id: fanSpeedComp
+        ControlSlider {
+            tint: card.accent
+            stepSize: Number(card.attrs.percentage_step || 1)
+            value: card.st && card.st.state === "on" ? Number(card.attrs.percentage || 0) : 0
+            onValueSet: function (v) { Ha.svc(card.client, "fan", "set_percentage", card.entityId, { percentage: Math.round(v) }); }
+        }
+    }
+
+    Component {
+        id: numericComp
+        ControlSlider {
+            tint: card.accent
+            from: Number(card.attrs.min !== undefined ? card.attrs.min : 0)
+            to: Number(card.attrs.max !== undefined ? card.attrs.max : 100)
+            stepSize: Number(card.attrs.step || 1)
+            value: Number(card.st ? card.st.state : 0)
+            onValueSet: function (v) { Ha.svc(card.client, card.domain, "set_value", card.entityId, { value: v }); }
         }
     }
 
@@ -177,22 +325,36 @@ CardFrame {
         id: coverComp
         RowLayout {
             spacing: Kirigami.Units.smallSpacing
-            Item { Layout.fillWidth: true }
-            IconButton { client: card.client; icon: "mdi:arrow-up"; onClicked: Ha.svc(card.client, "cover", "open_cover", card.entityId) }
-            IconButton { client: card.client; icon: "mdi:stop"; onClicked: Ha.svc(card.client, "cover", "stop_cover", card.entityId) }
-            IconButton { client: card.client; icon: "mdi:arrow-down"; onClicked: Ha.svc(card.client, "cover", "close_cover", card.entityId) }
-            Item { Layout.fillWidth: true }
+            ControlButton { Layout.fillWidth: true; client: card.client; icon: "mdi:arrow-up"
+                            onClicked: Ha.svc(card.client, "cover", "open_cover", card.entityId) }
+            ControlButton { Layout.fillWidth: true; client: card.client; icon: "mdi:stop"
+                            onClicked: Ha.svc(card.client, "cover", "stop_cover", card.entityId) }
+            ControlButton { Layout.fillWidth: true; client: card.client; icon: "mdi:arrow-down"
+                            onClicked: Ha.svc(card.client, "cover", "close_cover", card.entityId) }
+        }
+    }
+
+    Component {
+        id: lockComp
+        RowLayout {
+            spacing: Kirigami.Units.smallSpacing
+            ControlButton { Layout.fillWidth: true; client: card.client; icon: "mdi:lock"
+                            active: card.st && card.st.state === "locked"; tint: card.accent
+                            onClicked: Ha.svc(card.client, "lock", "lock", card.entityId) }
+            ControlButton { Layout.fillWidth: true; client: card.client; icon: "mdi:lock-open-variant"
+                            active: card.st && card.st.state === "unlocked"; tint: card.accent
+                            onClicked: Ha.svc(card.client, "lock", "unlock", card.entityId) }
         }
     }
 
     Component {
         id: toggleComp
-        RowLayout {
-            Item { Layout.fillWidth: true }
-            PC3.Switch {
-                checked: card.st ? card.st.state === "on" : false
-                onToggled: Ha.toggle(card.client, card.entityId)
-            }
+        ControlSwitch {
+            client: card.client
+            tint: card.accent
+            checked: card.st ? card.st.state === "on" : false
+            enabled: card.st && card.st.state !== "unavailable"
+            onToggled: Ha.toggle(card.client, card.entityId)
         }
     }
 
@@ -200,6 +362,7 @@ CardFrame {
         id: targetComp
         RowLayout {
             id: tgt
+            spacing: Kirigami.Units.smallSpacing
             property real pending: NaN
             readonly property real current: !isNaN(pending) ? pending : Number(card.attrs.temperature)
             readonly property real step: Number(card.attrs.target_temp_step || 0.5)
@@ -216,28 +379,29 @@ CardFrame {
                     tgt.pending = NaN;
                 }
             }
-            IconButton { client: card.client; icon: "mdi:minus"; onClicked: tgt.bump(-1) }
+            ControlButton { client: card.client; icon: "mdi:minus"; onClicked: tgt.bump(-1) }
             PC3.Label {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: isNaN(tgt.current) ? "—" : Ha.withUnit(Ha.formatNumber(card.client, tgt.current, 1), Ha.temperatureUnit(card.client))
             }
-            IconButton { client: card.client; icon: "mdi:plus"; onClicked: tgt.bump(1) }
+            ControlButton { client: card.client; icon: "mdi:plus"; onClicked: tgt.bump(1) }
         }
     }
 
     Component {
         id: hvacComp
-        Flow {
+        RowLayout {
             spacing: Kirigami.Units.smallSpacing
             Repeater {
                 model: card.attrs.hvac_modes || []
-                IconButton {
+                ControlButton {
                     required property var modelData
+                    Layout.fillWidth: true
                     client: card.client
                     icon: Ha.HVAC_ICONS[modelData] || "mdi:thermostat"
-                    highlighted: card.st && card.st.state === modelData
-                    highlightColor: card.dash.tint(Ha.activeColor(card.entityId, { state: modelData, attributes: {} }), Kirigami.Theme.highlightColor)
+                    active: card.st && card.st.state === modelData
+                    tint: card.dash.tint(Ha.activeColor(card.entityId, { state: modelData, attributes: {} }), Kirigami.Theme.highlightColor)
                     onClicked: Ha.svc(card.client, "climate", "set_hvac_mode", card.entityId, { hvac_mode: modelData })
                 }
             }
